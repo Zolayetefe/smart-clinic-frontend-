@@ -4,6 +4,7 @@ import { User, Mail, Lock, Phone, Calendar, MapPin, Heart } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { toast } from 'react-hot-toast';
 
 // Update interface to match AuthContext's RegisterData
 interface RegisterFormData {
@@ -113,17 +114,31 @@ const Register: React.FC = () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
+    setErrors({});
     
     try {
-      // Remove confirmPassword and prepare data for API
-      const { confirmPassword, ...patientData } = formData;
+      const { confirmPassword, ...registrationData } = formData;
+      await register(registrationData);
+      
+      // Show success message and navigate
+      toast.success('Registration successful! Please login to continue.', {
+        duration: 3000,
+      });
+      
+      // Navigate to login page after a short delay
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
 
-      await register(patientData);
-      navigate('/patient');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
       setErrors({
-        email: 'Registration failed. Please try again.',
+        submit: error.message || 'Registration failed. Please try again.'
+      });
+      
+      // Show error toast
+      toast.error(error.message || 'Registration failed. Please try again.', {
+        duration: 4000,
       });
     } finally {
       setIsLoading(false);
@@ -262,6 +277,12 @@ const Register: React.FC = () => {
             leftAddon={<Lock className="h-5 w-5 text-gray-400" />}
           />
         </div>
+        
+        {errors.submit && (
+          <div className="text-red-500 text-sm text-center mt-2">
+            {errors.submit}
+          </div>
+        )}
         
         <div className="mt-6">
           <Button

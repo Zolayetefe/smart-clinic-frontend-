@@ -4,16 +4,13 @@ export interface UserType {
   name: string;
   email: string;
   role: string;
-  patient?: {
-    id: string;
-    userId: string;
-    dateOfBirth: string;
-    gender: string;
-    address: string;
-    emergencyContact: string;
-  };
-  doctor: null | any; // Update this with proper doctor interface if needed
-  nurse: null | any; // Update this with proper nurse interface if needed
+  phone?: string;
+  department?: string;
+  doctor?: DoctorDetails | null;
+  nurse?: NurseDetails | null;
+  patient?: PatientDetails | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Patient types
@@ -153,4 +150,57 @@ export interface DoctorSuggestionType {
   specialty: string;
   confidence: number;
   reasoning: string;
+}
+
+// Doctor types
+export interface DoctorDetails {
+  id: string;
+  userId: string;
+  specialization: string;
+  availabilities: Array<{
+    id: string;
+    doctorId: string;
+    day: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  slots: Array<{
+    id: string;
+    doctorId: string;
+    day: string;
+    slotTime: string;
+    isBooked: boolean;
+  }>;
+}
+
+// Nurse types
+export interface NurseDetails {
+  id: string;
+  userId: string;
+}
+
+// Patient types
+export interface PatientDetails {
+  id: string;
+  userId: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  emergencyContact: string;
+}
+
+// Add this to your types file
+export interface Appointment {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  status: string;
+  reason: string;
+  dateTime: string;
+  rescheduledFrom: string | null;
+  createdAt: string;
+  patient?: {
+    name: string;
+    age?: number;
+  };
 }

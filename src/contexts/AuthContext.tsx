@@ -45,8 +45,14 @@ interface RegisterData {
   address: string;
   emergencyContact: string;
   
-  // Optional department field
+  // Optional fields
   department?: string;
+  specialization?: string;
+}
+
+interface RegisterResponse {
+  message: string;
+  user: UserType;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -145,17 +151,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: RegisterData): Promise<void> => {
     setLoading(true);
     try {
-      const response = await api.post<ApiResponse<AuthResponse>>('/auth/patient/register', userData);
+      let endpoint = '';
+      
+      // Determine the endpoint based on the role
+      switch (userData.role) {
+        case 'patient':
+          endpoint = '/auth/patient/register';
+          break;
+        case 'doctor':
+        case 'nurse':
+        case 'lab_technician':
+        case 'pharmacist':
+        case 'receptionist':
+          endpoint = '/admin/staff/register';
+          break;
+        default:
+          throw new Error('Invalid role specified');
+      }
 
-      if (response.data.success && response.data.data) {
-        setUser(response.data.data.user);
+      const response = await api.post<RegisterResponse>(endpoint, userData);
+
+      // Check if we have a user in the response
+      if (response.data.user) {
+        setUser(response.data.user);
       } else {
-        throw new Error(response.data.message || 'Registration failed');
+        throw new Error(response.data.message || 'Registration failed: No user data received');
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<ApiResponse>;
-        throw new Error(axiosError.response?.data?.message || 'Registration failed');
+        const errorMessage = error.response?.data?.message || 'Registration failed';
+        throw new Error(errorMessage);
       }
       throw error;
     } finally {

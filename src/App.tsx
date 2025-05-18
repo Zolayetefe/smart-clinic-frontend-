@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster } from 'react-hot-toast';
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
@@ -26,6 +27,7 @@ import MedecalRecords from './pages/dashboard/patient/ MedicalRecords';
 import DoctorAppointments from './pages/dashboard/doctor/Appointments';
 // import Prescriptions from './pages/dashboard/doctor/Prescriptions';
 import LabRequests from './pages/dashboard/doctor/LabRequests';
+// import DoctorAppointment from './pages/dashboard/doctor/DoctorAppointments';
 
 // labratory Pages
 import LabTechnician from './pages/dashboard/labTechnician/LabTechnician';
@@ -44,6 +46,30 @@ const App = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              style: {
+                background: '#4aed88',
+                color: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#ff4b4b',
+                color: '#fff',
+              },
+            },
+          }}
+        />
         <Router>
           <Routes>
             {/* Auth Routes */}
@@ -131,6 +157,7 @@ const App = () => {
                   </ProtectedRoute>
                 } 
               />
+            
               {/* <Route 
                 path="/doctor/patients/:id" 
                 element={
