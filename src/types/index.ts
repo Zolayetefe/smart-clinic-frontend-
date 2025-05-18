@@ -3,8 +3,17 @@ export interface UserType {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'doctor' | 'nurse' | 'patient' | 'receptionist' | 'pharmacist' | 'lab_technician' | 'finance';
- 
+  role: string;
+  patient?: {
+    id: string;
+    userId: string;
+    dateOfBirth: string;
+    gender: string;
+    address: string;
+    emergencyContact: string;
+  };
+  doctor: null | any; // Update this with proper doctor interface if needed
+  nurse: null | any; // Update this with proper nurse interface if needed
 }
 
 // Patient types

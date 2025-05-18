@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, User, Clock, FileText, ArrowRight, CheckCircle } from 'lucide-react';
+import { Calendar, User, Clock, FileText, ArrowRight, CheckCircle, Activity } from 'lucide-react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
 import Button from '../../../components/ui/Button';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // Specialty options for doctor selection
 const specialties = [
-  { id: 'cardiology', name: 'Cardiology', description: 'Heart and cardiovascular system' },
+  { id: 'Cardiologist', name: 'Cardiology', description: 'Heart and cardiovascular system' },
   { id: 'dermatology', name: 'Dermatology', description: 'Skin, hair, and nails' },
   { id: 'neurology', name: 'Neurology', description: 'Brain, spinal cord, and nervous system' },
   { id: 'orthopedics', name: 'Orthopedics', description: 'Bones, joints, ligaments, tendons, and muscles' },
@@ -15,33 +18,43 @@ const specialties = [
   { id: 'general', name: 'General Medicine', description: 'General health assessments and primary care' },
 ];
 
-// Mock doctors data
-const doctors = [
-  { id: 1, name: 'Dr. Sarah Johnson', specialty: 'cardiology', image: 'https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=150', rating: 4.9, available: true },
-  { id: 2, name: 'Dr. Robert Williams', specialty: 'dermatology', image: 'https://images.pexels.com/photos/4225880/pexels-photo-4225880.jpeg?auto=compress&cs=tinysrgb&w=150', rating: 4.7, available: true },
-  { id: 3, name: 'Dr. Jennifer Lopez', specialty: 'neurology', image: 'https://images.pexels.com/photos/5214959/pexels-photo-5214959.jpeg?auto=compress&cs=tinysrgb&w=150', rating: 4.8, available: true },
-  { id: 4, name: 'Dr. Michael Chen', specialty: 'orthopedics', image: 'https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=150', rating: 4.6, available: true },
-  { id: 5, name: 'Dr. Emily Patel', specialty: 'gastroenterology', image: 'https://images.pexels.com/photos/5407206/pexels-photo-5407206.jpeg?auto=compress&cs=tinysrgb&w=150', rating: 4.8, available: true },
-  { id: 6, name: 'Dr. James Wilson', specialty: 'general', image: 'https://images.pexels.com/photos/5215024/pexels-photo-5215024.jpeg?auto=compress&cs=tinysrgb&w=150', rating: 4.9, available: true },
-];
+interface Doctor {
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  department: string;
+  doctorId: string;
+  specialization: string;
+  slots: TimeSlot[];
+}
 
-// Available time slots
-const timeSlots = [
-  '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-  '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
-  '4:00 PM', '4:30 PM'
-];
+interface TimeSlot {
+  id: string;
+  day: string;
+  time: string;
+  isBooked: boolean;
+}
+
+interface VitalsData {
+  bloodPressure: string;
+  heartRate: string;
+  temperature: string;
+  weight: string;
+  height: string;
+  notes: string;
+}
 
 // For demo purposes, use these symptoms for AI matching
 const commonSymptoms = [
-  { id: 's1', name: 'Chest pain', matches: ['cardiology'] },
-  { id: 's2', name: 'Rash', matches: ['dermatology'] },
-  { id: 's3', name: 'Headache', matches: ['neurology', 'general'] },
-  { id: 's4', name: 'Joint pain', matches: ['orthopedics'] },
-  { id: 's5', name: 'Stomachache', matches: ['gastroenterology'] },
-  { id: 's6', name: 'Fever', matches: ['general'] },
-  { id: 's7', name: 'Cough', matches: ['general'] },
-  { id: 's8', name: 'Dizziness', matches: ['neurology', 'general'] },
+  { id: 's1', name: 'fever', matches: ['general'] },
+  { id: 's2', name: 'cough', matches: ['general'] },
+  { id: 's3', name: 'headache', matches: ['neurology', 'general'] },
+  { id: 's4', name: 'joint pain', matches: ['orthopedics'] },
+  { id: 's5', name: 'chest pain', matches: ['cardiology'] },
+  { id: 's6', name: 'shortness of breath', matches: ['cardiology', 'general'] },
+  { id: 's7', name: 'nausea', matches: ['gastroenterology'] },
+  { id: 's8', name: 'dizziness', matches: ['neurology', 'general'] },
 ];
 
 interface BookingStep {
@@ -49,24 +62,51 @@ interface BookingStep {
   icon: React.ReactNode;
 }
 
+// Add this interface for the appointment request
+interface AppointmentRequest {
+  patientId: string;
+  doctorId: string;
+  dateTime: string;
+  reason: string;
+  slotId: string;
+  symptoms: string[];
+  vitals: {
+    temperature: string;
+    bloodPressure: string;
+  };
+}
+
 const BookAppointment: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get user data from auth context
   
   // Booking states
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
-  const [selectedDoctor, setSelectedDoctor] = useState<number | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [bookingReason, setBookingReason] = useState('');
   const [isAiRecommending, setIsAiRecommending] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [isBookingComplete, setIsBookingComplete] = useState(false);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [vitals, setVitals] = useState<VitalsData>({
+    bloodPressure: '',
+    heartRate: '',
+    temperature: '',
+    weight: '',
+    height: '',
+    notes: ''
+  });
+  const [socket, setSocket] = useState<any>(null);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   
   // Steps for the booking process
   const steps: BookingStep[] = [
     { title: 'Symptoms & Specialty', icon: <FileText className="h-5 w-5" /> },
+    { title: 'Vitals & Notes', icon: <Activity className="h-5 w-5" /> },
     { title: 'Doctor Selection', icon: <User className="h-5 w-5" /> },
     { title: 'Date & Time', icon: <Calendar className="h-5 w-5" /> },
     { title: 'Confirmation', icon: <CheckCircle className="h-5 w-5" /> },
@@ -114,20 +154,94 @@ const BookAppointment: React.FC = () => {
     }, 1500);
   };
   
-  // Filter doctors by specialty
-  const filteredDoctors = selectedSpecialty 
-    ? doctors.filter(doctor => doctor.specialty === selectedSpecialty)
-    : doctors;
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const socketInstance = io('http://localhost:5000', {
+      auth: {
+        token: localStorage.getItem('token') // Assuming you store the token in localStorage
+      }
+    });
+
+    socketInstance.on('connect', () => {
+      console.log('Connected to WebSocket');
+      socketInstance.emit('join-role-room', 'patient');
+    });
+
+    setSocket(socketInstance);
+
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, []);
+
+  // Fetch doctors when specialty is selected
+  const fetchDoctors = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/patient/doctors/${selectedSpecialty}`, {
+        withCredentials: true
+      });
+      setDoctors(response.data.doctors);
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+    }
+  };
   
-  // Handle booking confirmation
-  const confirmBooking = () => {
-    // In a real app, this would make an API call to create the appointment
-    setIsBookingComplete(true);
-    
-    // Navigate to appointments page after a delay
-    setTimeout(() => {
-      navigate('/patient/appointments');
-    }, 3000);
+  // Update the confirmBooking function
+  const confirmBooking = async () => {
+    try {
+      if (!selectedDoctor || !selectedSlot) {
+        console.error('Missing required booking information');
+        return;
+      }
+
+      // Get patient ID from the user object
+      const patientId = user?.patient?.id;
+      
+      if (!patientId) {
+        console.error('Patient ID not found');
+        return;
+      }
+
+      // Convert selected slot time to ISO format
+      const [hours, minutes] = selectedSlot.time.split(':');
+      const dateTime = new Date();
+      dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const appointmentData: AppointmentRequest = {
+        patientId: patientId, // Use the patient ID from user data
+        doctorId: selectedDoctor,
+        dateTime: dateTime.toISOString(),
+        reason: bookingReason,
+        slotId: selectedSlot.id,
+        symptoms: selectedSymptoms.map(symptomId => {
+          const symptom = commonSymptoms.find(s => s.id === symptomId);
+          return symptom ? symptom.name.toLowerCase() : '';
+        }).filter(Boolean),
+        vitals: {
+          temperature: vitals.temperature + '°C',
+          bloodPressure: vitals.bloodPressure
+        }
+      };
+
+      const response = await axios.post(
+        'http://localhost:5000/api/patient/book-appointment', 
+        appointmentData,
+        { withCredentials: true }
+      );
+
+      if (response.data) {
+        // Join doctor's room for updates
+        socket?.emit('join-doctor-room', selectedDoctor);
+        setIsBookingComplete(true);
+        
+        setTimeout(() => {
+          navigate('/patient/appointments');
+        }, 3000);
+      }
+    } catch (error: any) {
+      console.error('Error creating appointment:', error.response?.data || error.message);
+      // You might want to add error handling UI here
+    }
   };
   
   // Get next available days starting from tomorrow
@@ -146,7 +260,10 @@ const BookAppointment: React.FC = () => {
   };
   
   // Move to next step
-  const nextStep = () => {
+  const nextStep = async () => {
+    if (currentStep === 0 && selectedSpecialty) {
+      await fetchDoctors();
+    }
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0);
@@ -160,6 +277,123 @@ const BookAppointment: React.FC = () => {
       window.scrollTo(0, 0);
     }
   };
+  
+  // Render vitals form
+  const renderVitalsForm = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          label="Blood Pressure (mmHg)"
+          value={vitals.bloodPressure}
+          onChange={(e) => setVitals({ ...vitals, bloodPressure: e.target.value })}
+          placeholder="120/80"
+        />
+        <Input
+          label="Heart Rate (bpm)"
+          value={vitals.heartRate}
+          onChange={(e) => setVitals({ ...vitals, heartRate: e.target.value })}
+          placeholder="72"
+        />
+        <Input
+          label="Temperature (°C)"
+          value={vitals.temperature}
+          onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })}
+          placeholder="37.0"
+        />
+        <Input
+          label="Weight (kg)"
+          value={vitals.weight}
+          onChange={(e) => setVitals({ ...vitals, weight: e.target.value })}
+          placeholder="70"
+        />
+        <Input
+          label="Height (cm)"
+          value={vitals.height}
+          onChange={(e) => setVitals({ ...vitals, height: e.target.value })}
+          placeholder="170"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Additional Notes
+        </label>
+        <textarea
+          value={vitals.notes}
+          onChange={(e) => setVitals({ ...vitals, notes: e.target.value })}
+          className="w-full h-32 p-2 border rounded-md"
+          placeholder="Any additional information about your condition..."
+        />
+      </div>
+    </div>
+  );
+
+  // Update doctor selection render
+  const renderDoctorSelection = () => (
+    <div className="space-y-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        {doctors.map((doctor) => (
+          <div
+            key={doctor.userId}
+            onClick={() => setSelectedDoctor(doctor.doctorId)}
+            className={`p-4 border rounded-lg cursor-pointer transition ${
+              selectedDoctor === doctor.doctorId
+                ? 'border-primary bg-primary/5'
+                : 'border-gray-200 hover:border-primary/50'
+            }`}
+          >
+            <h5 className="font-medium text-gray-900">{doctor.name}</h5>
+            <p className="text-sm text-gray-500">{doctor.specialization}</p>
+            <p className="text-sm text-gray-500">{doctor.department}</p>
+            
+            {selectedDoctor === doctor.doctorId && (
+              <div className="mt-4">
+                <h6 className="font-medium text-sm mb-2">Available Slots:</h6>
+                <div className="grid grid-cols-2 gap-2">
+                  {doctor.slots.map((slot) => (
+                    <button
+                      key={slot.id}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering parent div's onClick
+                        if (!slot.isBooked) {
+                          setSelectedSlot(slot);
+                        }
+                      }}
+                      className={`
+                        p-2 text-sm rounded transition-colors
+                        ${slot.isBooked 
+                          ? 'bg-red-100 text-red-800 cursor-not-allowed opacity-75' 
+                          : selectedSlot?.id === slot.id
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                        }
+                      `}
+                      disabled={slot.isBooked}
+                      title={slot.isBooked ? 'This slot is already booked' : 'Available slot'}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{slot.day}</span>
+                        <span>{slot.time}</span>
+                      </div>
+                      {slot.isBooked && (
+                        <div className="text-xs mt-1">
+                          Booked
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {doctor.slots.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">
+                    No available slots for this doctor
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
@@ -272,111 +506,30 @@ const BookAppointment: React.FC = () => {
             </div>
           )}
           
-          {/* Step 2: Doctor Selection */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500 mb-4">
-                Please select a doctor from our{' '}
-                <span className="font-medium capitalize">{selectedSpecialty}</span> specialists.
-              </p>
-              
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                {filteredDoctors.map(doctor => (
-                  <div
-                    key={doctor.id}
-                    onClick={() => setSelectedDoctor(doctor.id)}
-                    className={`p-4 border rounded-lg cursor-pointer flex items-start transition ${
-                      selectedDoctor === doctor.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 hover:border-primary/50'
-                    }`}
-                  >
-                    <img 
-                      src={doctor.image} 
-                      alt={doctor.name}
-                      className="w-16 h-16 rounded-full object-cover mr-4"
-                    />
+          {/* Step 2: Vitals & Notes */}
+          {currentStep === 1 && renderVitalsForm()}
+          
+          {/* Step 3: Doctor Selection */}
+          {currentStep === 2 && renderDoctorSelection()}
+          
+          {/* Step 4: Date & Time */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              {selectedDoctor && selectedSlot && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Selected Time Slot</h4>
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h5 className="font-medium text-gray-900">{doctor.name}</h5>
-                      <p className="text-sm text-gray-500 capitalize">{doctor.specialty}</p>
-                      <div className="flex items-center mt-1">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <svg 
-                              key={i} 
-                              className={`w-4 h-4 ${i < Math.floor(doctor.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
-                              fill="currentColor" 
-                              viewBox="0 0 20 20" 
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
-                          <span className="ml-1 text-sm text-gray-500">{doctor.rating}</span>
-                        </div>
-                        {doctor.available && (
-                          <span className="ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Available
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-sm text-gray-500">Day</p>
+                      <p className="font-medium">{selectedSlot.day}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Time</p>
+                      <p className="font-medium">{selectedSlot.time}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Step 3: Date & Time */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select a preferred date
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {getAvailableDates().map(date => (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => setSelectedDate(date)}
-                      className={`py-2 px-3 rounded-md text-sm transition ${
-                        selectedDate === date
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
-                    >
-                      {new Date(date).toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </button>
-                  ))}
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select a preferred time
-                </label>
-                <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                  {timeSlots.map(time => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => setSelectedTime(time)}
-                      className={`py-2 px-3 rounded-md text-sm transition ${
-                        selectedTime === time
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
               
               <div>
                 <Input
@@ -389,8 +542,8 @@ const BookAppointment: React.FC = () => {
             </div>
           )}
           
-          {/* Step 4: Confirmation */}
-          {currentStep === 3 && (
+          {/* Step 5: Confirmation */}
+          {currentStep === 4 && (
             <div className="space-y-4">
               {isBookingComplete ? (
                 <div className="text-center py-8">
@@ -416,7 +569,7 @@ const BookAppointment: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-500">Doctor:</span>
                         <span className="font-medium text-gray-900">
-                          {doctors.find(d => d.id === selectedDoctor)?.name}
+                          {doctors.find(d => d.doctorId === selectedDoctor)?.name}
                         </span>
                       </div>
                       
@@ -441,7 +594,9 @@ const BookAppointment: React.FC = () => {
                       
                       <div className="flex justify-between">
                         <span className="text-gray-500">Time:</span>
-                        <span className="font-medium text-gray-900">{selectedTime}</span>
+                        <span className="font-medium text-gray-900">
+                          {selectedSlot ? `${selectedSlot.day} at ${selectedSlot.time}` : ''}
+                        </span>
                       </div>
                       
                       {bookingReason && (
@@ -483,8 +638,9 @@ const BookAppointment: React.FC = () => {
               onClick={nextStep}
               disabled={
                 (currentStep === 0 && !selectedSpecialty) ||
-                (currentStep === 1 && !selectedDoctor) ||
-                (currentStep === 2 && (!selectedDate || !selectedTime))
+                (currentStep === 1 && !vitals.bloodPressure) ||
+                (currentStep === 2 && !selectedDoctor) ||
+                (currentStep === 3 && !selectedSlot)
               }
               rightIcon={<ArrowRight className="h-4 w-4" />}
             >

@@ -1,12 +1,33 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, FileText, Clock, Bell, UserPlus, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
+import axios from 'axios';
+import { categorizeAppointments, formatAppointmentDateTime } from '../../../utils/dateUtils';
+
+// Add interface for appointment
+interface Appointment {
+  id: string;
+  dateTime: string;
+  status: string;
+  reason: string;
+  doctor: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    department: string;
+    specialization: string;
+  };
+}
 
 const PatientDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Mock data for upcoming appointments
   const upcomingAppointments = [
@@ -66,6 +87,25 @@ const PatientDashboard: React.FC = () => {
     }
   ];
   
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/patient/appointments', {
+          withCredentials: true
+        });
+        setAppointments(response.data.appointments);
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  const { today, upcoming, past } = categorizeAppointments(appointments);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Section */}
@@ -80,7 +120,7 @@ const PatientDashboard: React.FC = () => {
               variant="outline" 
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               rightIcon={<ArrowRight className="h-4 w-4" />}
-              onClick={() => window.location.href = '/patient/book-appointment'}
+              onClick={() => navigate('/patient/book-appointment')}
             >
               Book an Appointment
             </Button>
@@ -96,7 +136,7 @@ const PatientDashboard: React.FC = () => {
               <Calendar className="h-8 w-8 text-primary" />
             </div>
             <h3 className="mt-4 text-lg font-medium text-gray-900">Upcoming Appointments</h3>
-            <p className="mt-1 text-3xl font-semibold text-primary">{upcomingAppointments.length}</p>
+            <p className="mt-1 text-3xl font-semibold text-primary">{upcoming.length}</p>
             <Link 
               to="/patient/appointments"
               className="mt-4 text-sm text-primary hover:text-primary-dark font-medium flex items-center"
@@ -157,36 +197,50 @@ const PatientDashboard: React.FC = () => {
         </CardHeader>
         <CardBody className="px-0 py-0">
           <div className="divide-y divide-gray-200">
-            {upcomingAppointments.length > 0 ? (
-              upcomingAppointments.map((appointment) => (
-                <div key={appointment.id} className="p-6 flex items-start">
-                  <div className="mr-4 flex-shrink-0">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      <Calendar className="h-6 w-6 text-primary" />
+            {loading ? (
+              <div className="p-6 text-center">
+                <p className="text-gray-500">Loading appointments...</p>
+              </div>
+            ) : upcoming.length > 0 ? (
+              upcoming.map((appointment) => {
+                const { date, time } = formatAppointmentDateTime(appointment.dateTime);
+                return (
+                  <div key={appointment.id} className="p-6 flex items-start">
+                    <div className="mr-4 flex-shrink-0">
+                      <div className="p-2 bg-primary/10 rounded-full">
+                        <Calendar className="h-6 w-6 text-primary" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-base font-medium text-gray-900">{appointment.doctorName}</h4>
-                    <p className="text-sm text-gray-500">{appointment.specialty}</p>
-                    <div className="mt-2 flex items-center">
-                      <Clock className="h-4 w-4 text-gray-400 mr-1" />
-                      <span className="text-sm text-gray-600">
-                        {new Date(appointment.date).toLocaleDateString('en-US', { 
-                          weekday: 'long',
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })} at {appointment.time}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-base font-medium text-gray-900">
+                        Dr. {appointment.doctor.name}
+                      </h4>
+                      <p className="text-sm text-gray-500">{appointment.doctor.specialization}</p>
+                      <p className="text-sm text-gray-500">{appointment.doctor.department}</p>
+                      <div className="mt-2 flex items-center">
+                        <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                        <span className="text-sm text-gray-600">
+                          {date} at {time}
+                        </span>
+                      </div>
+                      {appointment.reason && (
+                        <p className="mt-2 text-sm text-gray-600">
+                          Reason: {appointment.reason}
+                        </p>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        appointment.status === 'confirmed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      } capitalize`}>
+                        {appointment.status}
                       </span>
                     </div>
                   </div>
-                  <div className="ml-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
-                      {appointment.status}
-                    </span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="p-6 text-center">
                 <p className="text-gray-500">No upcoming appointments</p>
