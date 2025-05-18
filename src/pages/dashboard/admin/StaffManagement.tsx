@@ -25,7 +25,6 @@ interface Staff {
   email: string;
   role: string;
   phone: string;
-  department: string | null;
   doctor: DoctorInfo | null;
   nurse: null; // Add other staff type interfaces if needed
 }
@@ -42,7 +41,6 @@ interface StaffFormData {
   password: string;
   role: string;
   phone: string;
-  department: string;
   specialization?: string;
   availabilities?: AvailabilityForm[];
 }
@@ -60,6 +58,15 @@ interface ScheduleModalProps {
   availabilities: Availability[];
   doctorName: string;
 }
+
+const specialties = [
+  { id: 'cardiology', name: 'Cardiology', description: 'Heart and cardiovascular system' },
+  { id: 'dermatology', name: 'Dermatology', description: 'Skin, hair, and nails' },
+  { id: 'neurology', name: 'Neurology', description: 'Brain, spinal cord, and nervous system' },
+  { id: 'orthopedics', name: 'Orthopedics', description: 'Bones, joints, ligaments, tendons, and muscles' },
+  { id: 'gastroenterology', name: 'Gastroenterology', description: 'Digestive system and related organs' },
+  { id: 'general', name: 'General Medicine', description: 'General health assessments and primary care' },
+];
 
 const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
   isOpen,
@@ -285,7 +292,6 @@ const StaffManagement: React.FC = () => {
     password: '',
     role: '',
     phone: '',
-    department: '',
     specialization: '',
     availabilities: [],
   });
@@ -365,13 +371,12 @@ const StaffManagement: React.FC = () => {
 
       await api.post('/admin/staff/register', submitData);
       
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: '',
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: '',
         phone: '',
-      department: '',
         specialization: '',
         availabilities: [],
       });
@@ -418,24 +423,34 @@ const StaffManagement: React.FC = () => {
   };
 
   const renderForm = () => (
-    <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-      <h2 className="text-xl font-bold mb-4">Add New Staff</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="bg-white rounded-lg max-w-3xl w-full p-8 max-h-[90vh] overflow-y-auto">
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-gray-900">Add New Staff</h2>
+        <p className="mt-2 text-sm text-gray-600">Fill in the information below to register a new staff member.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Information Section */}
+        <div className="space-y-6">
+          <div className="pb-6 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
-            label="Name"
+                label="Full Name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 required
+                className="w-full"
               />
               <Input
-                label="Email"
+                label="Email Address"
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
+                className="w-full"
               />
               <Input
                 label="Password"
@@ -444,52 +459,75 @@ const StaffManagement: React.FC = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
+                className="w-full"
               />
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                  required
-                >
-                  <option value="">Select Role</option>
-            <option value="doctor">Doctor</option>
-            <option value="nurse">Nurse</option>
-            <option value="lab_technician">Lab Technician</option>
-            <option value="pharmacist">Pharmacist</option>
-            <option value="receptionist">Receptionist</option>
-                </select>
-          <Input
-            label="Phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Department"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  required
-          />
-
-          {/* Additional fields for doctor role */}
-          {formData.role === 'doctor' && (
-            <>
               <Input
-                label="Specialization"
-                name="specialization"
-                value={formData.specialization}
+                label="Phone Number"
+                name="phone"
+                value={formData.phone}
                 onChange={handleInputChange}
                 required
+                className="w-full"
               />
-              <div className="col-span-2">
-                <h3 className="text-lg font-semibold mb-2">Availability Schedule</h3>
-                <div className="space-y-4">
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                    <div key={day} className="border-b pb-4">
-                      <h4 className="font-medium mb-2">{day}</h4>
+            </div>
+          </div>
+
+          {/* Role Section */}
+          <div className="pb-6 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Staff Role</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                required
+              >
+                <option value="">Select Role</option>
+                <option value="doctor">Doctor</option>
+                <option value="nurse">Nurse</option>
+                <option value="lab_technician">Lab Technician</option>
+                <option value="pharmacist">Pharmacist</option>
+                <option value="receptionist">Receptionist</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Doctor Specific Section */}
+          {formData.role === 'doctor' && (
+            <div className="space-y-6">
+              <div className="pb-6 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Doctor Details</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Specialization
+                  </label>
+                  <select
+                    name="specialization"
+                    value={formData.specialization}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                    required
+                  >
+                    <option value="">Select Specialization</option>
+                    {specialties.map((specialty) => (
+                      <option key={specialty.id} value={specialty.id}>
+                        {specialty.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Availability Schedule</h3>
+                <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
+                  {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map((day) => (
+                    <div key={day} className="pb-4 last:pb-0 last:border-b-0 border-b border-gray-200">
+                      <h4 className="font-medium text-gray-900 mb-3">{day}</h4>
                       <TimeSlotPicker
                         day={day}
                         availabilities={formData.availabilities?.filter(slot => slot.day === day) || []}
@@ -499,20 +537,33 @@ const StaffManagement: React.FC = () => {
                   ))}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-          <Button type="submit" variant="primary" isLoading={loading}>
-            Register Staff
-                </Button>
-              </div>
-            </form>
+        {/* Form Actions */}
+        <div className="pt-6 border-t border-gray-200">
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button" 
+              variant="outline"
+              onClick={() => setShowForm(false)}
+              className="px-4 py-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={loading}
+              className="px-4 py-2"
+            >
+              Register Staff
+            </Button>
           </div>
+        </div>
+      </form>
+    </div>
   );
 
   return (
@@ -550,7 +601,6 @@ const StaffManagement: React.FC = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Phone</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Department</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">Specialization</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden 2xl:table-cell">Availability</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -563,9 +613,11 @@ const StaffManagement: React.FC = () => {
                   <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">{staff.email}</td>
                   <td className="px-4 py-3 whitespace-nowrap capitalize">{staff.role}</td>
                   <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">{staff.phone}</td>
-                  <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">{staff.department || '-'}</td>
                   <td className="px-4 py-3 whitespace-nowrap hidden xl:table-cell">
-                    {staff.role === 'doctor' && staff.doctor?.specialization || '-'}
+                    {staff.role === 'doctor' && staff.doctor?.specialization ? 
+                      specialties.find(s => s.id === staff.doctor?.specialization)?.name || staff.doctor.specialization 
+                      : '-'
+                    }
                   </td>
                   <td className="px-4 py-3 hidden 2xl:table-cell">
                     {staff.role === 'doctor' && staff.doctor?.availabilities && (

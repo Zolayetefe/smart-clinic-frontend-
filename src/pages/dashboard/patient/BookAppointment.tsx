@@ -36,15 +36,6 @@ interface TimeSlot {
   isBooked: boolean;
 }
 
-interface VitalsData {
-  bloodPressure: string;
-  heartRate: string;
-  temperature: string;
-  weight: string;
-  height: string;
-  notes: string;
-}
-
 // For demo purposes, use these symptoms for AI matching
 const commonSymptoms = [
   { id: 's1', name: 'fever', matches: ['general'] },
@@ -62,7 +53,7 @@ interface BookingStep {
   icon: React.ReactNode;
 }
 
-// Add this interface for the appointment request
+// Update AppointmentRequest interface
 interface AppointmentRequest {
   patientId: string;
   doctorId: string;
@@ -70,10 +61,6 @@ interface AppointmentRequest {
   reason: string;
   slotId: string;
   symptoms: string[];
-  vitals: {
-    temperature: string;
-    bloodPressure: string;
-  };
 }
 
 const BookAppointment: React.FC = () => {
@@ -92,21 +79,12 @@ const BookAppointment: React.FC = () => {
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [isBookingComplete, setIsBookingComplete] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [vitals, setVitals] = useState<VitalsData>({
-    bloodPressure: '',
-    heartRate: '',
-    temperature: '',
-    weight: '',
-    height: '',
-    notes: ''
-  });
   const [socket, setSocket] = useState<any>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   
   // Steps for the booking process
   const steps: BookingStep[] = [
     { title: 'Symptoms & Specialty', icon: <FileText className="h-5 w-5" /> },
-    { title: 'Vitals & Notes', icon: <Activity className="h-5 w-5" /> },
     { title: 'Doctor Selection', icon: <User className="h-5 w-5" /> },
     { title: 'Date & Time', icon: <Calendar className="h-5 w-5" /> },
     { title: 'Confirmation', icon: <CheckCircle className="h-5 w-5" /> },
@@ -194,7 +172,6 @@ const BookAppointment: React.FC = () => {
         return;
       }
 
-      // Get patient ID from the user object
       const patientId = user?.patient?.id;
       
       if (!patientId) {
@@ -208,7 +185,7 @@ const BookAppointment: React.FC = () => {
       dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
       const appointmentData: AppointmentRequest = {
-        patientId: patientId, // Use the patient ID from user data
+        patientId: patientId,
         doctorId: selectedDoctor,
         dateTime: dateTime.toISOString(),
         reason: bookingReason,
@@ -216,11 +193,7 @@ const BookAppointment: React.FC = () => {
         symptoms: selectedSymptoms.map(symptomId => {
           const symptom = commonSymptoms.find(s => s.id === symptomId);
           return symptom ? symptom.name.toLowerCase() : '';
-        }).filter(Boolean),
-        vitals: {
-          temperature: vitals.temperature + '°C',
-          bloodPressure: vitals.bloodPressure
-        }
+        }).filter(Boolean)
       };
 
       const response = await axios.post(
@@ -230,7 +203,6 @@ const BookAppointment: React.FC = () => {
       );
 
       if (response.data) {
-        // Join doctor's room for updates
         socket?.emit('join-doctor-room', selectedDoctor);
         setIsBookingComplete(true);
         
@@ -240,7 +212,6 @@ const BookAppointment: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error creating appointment:', error.response?.data || error.message);
-      // You might want to add error handling UI here
     }
   };
   
@@ -278,55 +249,6 @@ const BookAppointment: React.FC = () => {
     }
   };
   
-  // Render vitals form
-  const renderVitalsForm = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Blood Pressure (mmHg)"
-          value={vitals.bloodPressure}
-          onChange={(e) => setVitals({ ...vitals, bloodPressure: e.target.value })}
-          placeholder="120/80"
-        />
-        <Input
-          label="Heart Rate (bpm)"
-          value={vitals.heartRate}
-          onChange={(e) => setVitals({ ...vitals, heartRate: e.target.value })}
-          placeholder="72"
-        />
-        <Input
-          label="Temperature (°C)"
-          value={vitals.temperature}
-          onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })}
-          placeholder="37.0"
-        />
-        <Input
-          label="Weight (kg)"
-          value={vitals.weight}
-          onChange={(e) => setVitals({ ...vitals, weight: e.target.value })}
-          placeholder="70"
-        />
-        <Input
-          label="Height (cm)"
-          value={vitals.height}
-          onChange={(e) => setVitals({ ...vitals, height: e.target.value })}
-          placeholder="170"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Additional Notes
-        </label>
-        <textarea
-          value={vitals.notes}
-          onChange={(e) => setVitals({ ...vitals, notes: e.target.value })}
-          className="w-full h-32 p-2 border rounded-md"
-          placeholder="Any additional information about your condition..."
-        />
-      </div>
-    </div>
-  );
-
   // Update doctor selection render
   const renderDoctorSelection = () => (
     <div className="space-y-4">
@@ -506,14 +428,11 @@ const BookAppointment: React.FC = () => {
             </div>
           )}
           
-          {/* Step 2: Vitals & Notes */}
-          {currentStep === 1 && renderVitalsForm()}
+          {/* Step 2: Doctor Selection */}
+          {currentStep === 1 && renderDoctorSelection()}
           
-          {/* Step 3: Doctor Selection */}
-          {currentStep === 2 && renderDoctorSelection()}
-          
-          {/* Step 4: Date & Time */}
-          {currentStep === 3 && (
+          {/* Step 3: Date & Time */}
+          {currentStep === 2 && (
             <div className="space-y-6">
               {selectedDoctor && selectedSlot && (
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -542,8 +461,8 @@ const BookAppointment: React.FC = () => {
             </div>
           )}
           
-          {/* Step 5: Confirmation */}
-          {currentStep === 4 && (
+          {/* Step 4: Confirmation */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               {isBookingComplete ? (
                 <div className="text-center py-8">
@@ -575,8 +494,8 @@ const BookAppointment: React.FC = () => {
                       
                       <div className="flex justify-between">
                         <span className="text-gray-500">Specialty:</span>
-                        <span className="font-medium text-gray-900 capitalize">
-                          {selectedSpecialty}
+                        <span className="font-medium text-gray-900">
+                          {selectedSpecialty ? specialties.find(s => s.id === selectedSpecialty)?.name : ''}
                         </span>
                       </div>
                       
@@ -638,9 +557,8 @@ const BookAppointment: React.FC = () => {
               onClick={nextStep}
               disabled={
                 (currentStep === 0 && !selectedSpecialty) ||
-                (currentStep === 1 && !vitals.bloodPressure) ||
-                (currentStep === 2 && !selectedDoctor) ||
-                (currentStep === 3 && !selectedSlot)
+                (currentStep === 1 && !selectedDoctor) ||
+                (currentStep === 2 && !selectedSlot)
               }
               rightIcon={<ArrowRight className="h-4 w-4" />}
             >
