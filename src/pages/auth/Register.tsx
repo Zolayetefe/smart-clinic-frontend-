@@ -120,7 +120,7 @@ const Register: React.FC = () => {
       const { confirmPassword, ...registrationData } = formData;
       await register(registrationData);
       
-      // Show success message and navigate
+      // Show success message
       toast.success('Registration successful! Please login to continue.', {
         duration: 3000,
       });

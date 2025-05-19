@@ -5,14 +5,21 @@ import Card, { CardHeader, CardBody } from '../../../components/ui/Card';
 import { Calendar, Clock, User, MapPin, Phone, UserPlus } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import { formatAppointmentDateTime } from '../../../utils/dateUtils';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface Doctor {
   id: string;
   name: string;
   email: string;
   phone: string;
-  department: string;
   specialization: string;
+}
+
+interface Patient {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
 }
 
 interface Appointment {
@@ -21,28 +28,43 @@ interface Appointment {
   status: string;
   reason: string;
   doctor: Doctor;
+  patient: Patient;
 }
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         const response = await axios.get('http://localhost:5000/api/patient/appointments', {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
-        setAppointments(response.data.appointments);
+
+        if (response.data && response.data.appointments) {
+          setAppointments(response.data.appointments);
+        } else {
+          console.error('Invalid response format:', response.data);
+          setError('Failed to load appointments: Invalid data format');
+        }
       } catch (error) {
         console.error('Error fetching appointments:', error);
+        setError('Failed to load appointments. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAppointments();
-  }, []);
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user]);
 
   const now = new Date();
   const upcomingAppointments = appointments.filter(app => new Date(app.dateTime) >= now);
@@ -88,7 +110,7 @@ const Appointments = () => {
             
             <div className="flex items-center text-gray-500">
               <MapPin className="h-5 w-5 mr-2" />
-              <span>{appointment.doctor.department}</span>
+              <span>{appointment.doctor.specialization}</span>
             </div>
             
             <div className="flex items-center text-gray-500">
@@ -107,6 +129,16 @@ const Appointments = () => {
       </div>
     );
   };
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6">

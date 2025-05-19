@@ -1,16 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import { UserType } from '../types';
+import { UserType, AuthResponse } from '../types';
+import { disconnectSocket } from '../utils/socket';
 
 // Define response types
 interface ApiResponse<T = any> {
   success: boolean;
   message: string;
   data?: T;
-}
-
-interface AuthResponse {
-  user: UserType;
 }
 
 interface LoginError {
@@ -21,9 +18,9 @@ interface LoginError {
 interface AuthContextType {
   user: UserType | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
-  logout: () => Promise<void>;
+  login: (email: string, password: string) => Promise<UserType>;
+  register: (data: any) => Promise<void>;
+  logout: () => void;
   isAuthenticated: boolean;
 }
 
@@ -50,11 +47,6 @@ interface RegisterData {
   specialization?: string;
 }
 
-interface RegisterResponse {
-  message: string;
-  user: UserType;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -69,7 +61,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 10000,
   headers: {
@@ -77,9 +69,9 @@ const api = axios.create({
   },
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Check if user is logged in on mount
   useEffect(() => {
@@ -103,43 +95,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Login function
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string): Promise<UserType> => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', {
+      console.log('Attempting login for:', email);
+      const response = await api.post<AuthResponse>('/auth/login', {
         email,
         password,
       });
       
-      // The response contains user object directly
+      console.log('Login response:', response.data);
+      
       if (response.data.user) {
         setUser(response.data.user);
+        return response.data.user;
       } else {
         throw new Error('Login failed: No user data received');
       }
     } catch (error) {
+      console.error('Login error details:', error);
       if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<ApiResponse>;
-        const loginError: LoginError = {
-          message: axiosError.response?.data?.message || 'Login failed',
-          status: axiosError.response?.status,
-        };
-
-        switch (axiosError.response?.status) {
-          case 400:
-            loginError.message = 'Invalid input data';
-            break;
-          case 401:
-            loginError.message = 'Invalid email or password';
-            break;
-          case 429:
-            loginError.message = 'Too many login attempts. Please try again later';
-            break;
-          case 500:
-            loginError.message = 'Server error. Please try again later';
-            break;
-        }
-        throw loginError;
+        const axiosError = error as AxiosError<{ message: string }>;
+        throw new Error(axiosError.response?.data?.message || 'Login failed');
       }
       throw error;
     } finally {
@@ -148,39 +125,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Register function
-  const register = async (userData: RegisterData): Promise<void> => {
+  const register = async (data: any): Promise<void> => {
     setLoading(true);
     try {
-      let endpoint = '';
+      const response = await api.post<AuthResponse>('/auth/register', data);
       
-      // Determine the endpoint based on the role
-      switch (userData.role) {
-        case 'patient':
-          endpoint = '/auth/patient/register';
-          break;
-        case 'doctor':
-        case 'nurse':
-        case 'lab_technician':
-        case 'pharmacist':
-        case 'receptionist':
-          endpoint = '/admin/staff/register';
-          break;
-        default:
-          throw new Error('Invalid role specified');
-      }
-
-      const response = await api.post<RegisterResponse>(endpoint, userData);
-
-      // Check if we have a user in the response
       if (response.data.user) {
         setUser(response.data.user);
       } else {
-        throw new Error(response.data.message || 'Registration failed: No user data received');
+        throw new Error('Registration failed: No user data received');
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || 'Registration failed';
-        throw new Error(errorMessage);
+        const axiosError = error as AxiosError<{ message: string }>;
+        throw new Error(axiosError.response?.data?.message || 'Registration failed');
       }
       throw error;
     } finally {
@@ -189,22 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Logout function
-  const logout = async (): Promise<void> => {
-    try {
-      const response = await api.post<ApiResponse>('/auth/logout');
-      
-      if (response.data.success) {
-        setUser(null);
-      } else {
-        throw new Error(response.data.message || 'Logout faiA led');
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<ApiResponse>;
-        throw new Error(axiosError.response?.data?.message || 'Logout failed');
-      }
-      throw error;
-    }
+  const logout = () => {
+    setUser(null);
+    disconnectSocket();
   };
 
   // Add response interceptor for handling token expiration

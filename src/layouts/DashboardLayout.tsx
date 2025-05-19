@@ -16,10 +16,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAppointments } from '../contexts/AppointmentContext';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { unseenCount } = useAppointments();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -28,7 +30,7 @@ const DashboardLayout: React.FC = () => {
   const getNavLinks = () => {
     if (!user) return [];
     
-    switch (user.role) {
+    switch (user.role.toLowerCase()) {
       case 'admin':
         return [
           { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
@@ -38,14 +40,16 @@ const DashboardLayout: React.FC = () => {
       case 'doctor':
         return [
           { name: 'Dashboard', href: '/doctor', icon: <Home className="h-5 w-5" /> },
-          { name: 'Appointments', href: '/doctor/appointments', icon: <Calendar className="h-5 w-5" /> },
+          { 
+            name: 'Appointments', href: '/doctor/appointments', icon: <Calendar className="h-5 w-5" />, badge: unseenCount > 0 ? unseenCount : undefined
+          },
           { name: 'Prescriptions', href: '/doctor/prescriptions', icon: <FileText className="h-5 w-5" /> },
           { name: 'Lab Requests', href: '/doctor/lab-requests', icon: <FileText className="h-5 w-5" /> },
         ];
       case 'patient':
         return [
           { name: 'Dashboard', href: '/patient', icon: <Home className="h-5 w-5" /> },
-          { name: 'Appointments', href: '/patient/appointments', icon: <Calendar className="h-5 w-5" /> },
+          { name: 'My Appointments', href: '/patient/appointments', icon: <Calendar className="h-5 w-5" /> },
           { name: 'Medical Records', href: '/patient/records', icon: <FileText className="h-5 w-5" /> },
           { name: 'Book Appointment', href: '/patient/book-appointment', icon: <UserPlus className="h-5 w-5" /> },
         ];
@@ -54,11 +58,10 @@ const DashboardLayout: React.FC = () => {
           { name: 'Dashboard', href: '/nurse', icon: <Home className="h-5 w-5" /> },
           { name: 'Patients', href: '/nurse/patients', icon: <Users className="h-5 w-5" /> },
         ];
-        case 'lab_technician':
-          return [
-            { name: 'Dashboard', href: '/lab_technician', icon: <Home className="h-5 w-5" /> },
-            // { name: 'Patients', href: '/nurse/patients', icon: <Users className="h-5 w-5" /> },
-          ];
+      case 'lab_technician':
+        return [
+          { name: 'Dashboard', href: '/lab_technician', icon: <Home className="h-5 w-5" /> },
+        ];
       default:
         return [];
     }
@@ -89,6 +92,28 @@ const DashboardLayout: React.FC = () => {
     return title;
   };
   
+  // Update the navigation link rendering in both desktop and mobile sidebars
+  const renderNavLink = (item: any) => (
+    <Link
+      key={item.name}
+      to={item.href}
+      className={`
+        group flex items-center px-2 py-2 text-sm font-medium rounded-md relative
+        ${location.pathname === item.href
+          ? 'bg-primary/10 text-primary'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
+      `}
+    >
+      {item.icon}
+      <span className="ml-3">{item.name}</span>
+      {item.badge && (
+        <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+  
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar for larger screens */}
@@ -101,21 +126,7 @@ const DashboardLayout: React.FC = () => {
           
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <nav className="mt-5 flex-1 px-2 space-y-1">
-              {navLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`
-                    group flex items-center px-2 py-2 text-sm font-medium rounded-md
-                    ${location.pathname === item.href
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
-                  `}
-                >
-                  {item.icon}
-                  <span className="ml-3">{item.name}</span>
-                </Link>
-              ))}
+              {navLinks.map(renderNavLink)}
             </nav>
           </div>
           
@@ -187,22 +198,7 @@ const DashboardLayout: React.FC = () => {
             </div>
             
             <nav className="mt-5 px-2 space-y-1">
-              {navLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`
-                    group flex items-center px-2 py-2 text-base font-medium rounded-md
-                    ${location.pathname === item.href
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
-                  `}
-                  onClick={toggleSidebar}
-                >
-                  {item.icon}
-                  <span className="ml-3">{item.name}</span>
-                </Link>
-              ))}
+              {navLinks.map(renderNavLink)}
             </nav>
           </div>
           

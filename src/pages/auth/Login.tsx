@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,8 +11,9 @@ const Login: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const { login, loading } = useAuth();
+  const { login, loading, user } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   const demoCredentials = [
     { role: 'Admin', email: 'admin@smartclinic.com' },
@@ -24,6 +25,11 @@ const Login: React.FC = () => {
     { role: 'Finance', email: 'finance@smartclinic.com' },
     { role: 'Lab', email: 'lab@smartclinic.com' },
   ];
+
+  // Add useEffect for debugging
+  useEffect(() => {
+    console.log('Current user state:', user);
+  }, [user]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -45,6 +51,7 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    setError(null);
     setIsLoading(true);
 
     if (!validateForm()) {
@@ -53,37 +60,39 @@ const Login: React.FC = () => {
     }
 
     try {
-      await login(email, password);
-      console.log('Login successful');
+      console.log('Starting login process...');
+      const loggedInUser = await login(email, password);
+      console.log('Login successful, user data:', loggedInUser);
 
-      // Redirect based on role
-      if (email.startsWith('admin')) {
-        navigate('/admin');
-      } else if (email.startsWith('doctor')) {
-        navigate('/doctor');
-      } else if (email.startsWith('nurse')) {
-        navigate('/nurse');
-      } else if (email.startsWith('pharmasist')) {
-        navigate('/pharmacy');
-      } else if (email.startsWith('receiption')) {
-        navigate('/reception');
-      } else if (email.startsWith('finance')) {
-        navigate('/finance');
-      } else if (email.startsWith('lab')) {
-        navigate('/lab_technician');
+      if (loggedInUser) {
+        const role = loggedInUser.role.toLowerCase();
+        console.log('User role:', role);
+
+        // Map roles to their corresponding routes
+        const roleRoutes: Record<string, string> = {
+          admin: '/admin',
+          doctor: '/doctor',
+          nurse: '/nurse',
+          pharmacist: '/pharmacy',
+          receptionist: '/reception',
+          finance: '/finance',
+          lab_technician: '/lab_technician',
+          patient: '/patient'
+        };
+
+        const route = roleRoutes[role] || '/';
+        console.log('Navigating to:', route);
+        navigate(route);
       } else {
-        navigate('/patient');
+        console.error('No user data after successful login');
+        setError('Login successful but user data is missing');
       }
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
-        setErrors({
-          email: error.message,
-        });
+        setError(error.message);
       } else {
-        setErrors({
-          email: 'An unexpected error occurred',
-        });
+        setError('An unexpected error occurred');
       }
     } finally {
       setIsLoading(false);
@@ -93,6 +102,12 @@ const Login: React.FC = () => {
   return (
     <div className="animate-fade-in">
       <h2 className="mt-2 text-2xl font-bold text-gray-900 text-center">Sign in to your account</h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       <form className="mt-8 space-y-6" onSubmit={handleLogin}>
         {errors.email && <div className="error">{errors.email}</div>}

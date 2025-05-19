@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, User, Clock, FileText, ArrowRight, CheckCircle, Activity } from 'lucide-react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
 import Button from '../../../components/ui/Button';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
@@ -23,7 +22,6 @@ interface Doctor {
   name: string;
   email: string;
   phone: string;
-  department: string;
   doctorId: string;
   specialization: string;
   slots: TimeSlot[];
@@ -79,7 +77,6 @@ const BookAppointment: React.FC = () => {
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [isBookingComplete, setIsBookingComplete] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [socket, setSocket] = useState<any>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   
   // Steps for the booking process
@@ -132,26 +129,6 @@ const BookAppointment: React.FC = () => {
     }, 1500);
   };
   
-  // Initialize WebSocket connection
-  useEffect(() => {
-    const socketInstance = io('http://localhost:5000', {
-      auth: {
-        token: localStorage.getItem('token') // Assuming you store the token in localStorage
-      }
-    });
-
-    socketInstance.on('connect', () => {
-      console.log('Connected to WebSocket');
-      socketInstance.emit('join-role-room', 'patient');
-    });
-
-    setSocket(socketInstance);
-
-    return () => {
-      socketInstance.disconnect();
-    };
-  }, []);
-
   // Fetch doctors when specialty is selected
   const fetchDoctors = async () => {
     try {
@@ -179,15 +156,11 @@ const BookAppointment: React.FC = () => {
         return;
       }
 
-      // Convert selected slot time to ISO format
-      const [hours, minutes] = selectedSlot.time.split(':');
-      const dateTime = new Date();
-      dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
+      // Create the appointment data exactly matching the backend format
       const appointmentData: AppointmentRequest = {
         patientId: patientId,
         doctorId: selectedDoctor,
-        dateTime: dateTime.toISOString(),
+        dateTime: selectedSlot.time, // The slot.time should already be in ISO format
         reason: bookingReason,
         slotId: selectedSlot.id,
         symptoms: selectedSymptoms.map(symptomId => {
@@ -196,6 +169,8 @@ const BookAppointment: React.FC = () => {
         }).filter(Boolean)
       };
 
+      console.log('Sending appointment data:', appointmentData);
+
       const response = await axios.post(
         'http://localhost:5000/api/patient/book-appointment', 
         appointmentData,
@@ -203,15 +178,16 @@ const BookAppointment: React.FC = () => {
       );
 
       if (response.data) {
-        socket?.emit('join-doctor-room', selectedDoctor);
         setIsBookingComplete(true);
         
+        // Navigate to appointments page after successful booking
         setTimeout(() => {
           navigate('/patient/appointments');
         }, 3000);
       }
     } catch (error: any) {
       console.error('Error creating appointment:', error.response?.data || error.message);
+      // You might want to show an error message to the user here
     }
   };
   
@@ -255,7 +231,7 @@ const BookAppointment: React.FC = () => {
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         {doctors.map((doctor) => (
           <div
-            key={doctor.userId}
+            key={doctor.doctorId}
             onClick={() => setSelectedDoctor(doctor.doctorId)}
             className={`p-4 border rounded-lg cursor-pointer transition ${
               selectedDoctor === doctor.doctorId
@@ -265,7 +241,6 @@ const BookAppointment: React.FC = () => {
           >
             <h5 className="font-medium text-gray-900">{doctor.name}</h5>
             <p className="text-sm text-gray-500">{doctor.specialization}</p>
-            <p className="text-sm text-gray-500">{doctor.department}</p>
             
             {selectedDoctor === doctor.doctorId && (
               <div className="mt-4">
@@ -275,7 +250,7 @@ const BookAppointment: React.FC = () => {
                     <button
                       key={slot.id}
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering parent div's onClick
+                        e.stopPropagation();
                         if (!slot.isBooked) {
                           setSelectedSlot(slot);
                         }
@@ -304,11 +279,6 @@ const BookAppointment: React.FC = () => {
                     </button>
                   ))}
                 </div>
-                {doctor.slots.length === 0 && (
-                  <p className="text-sm text-gray-500 italic">
-                    No available slots for this doctor
-                  </p>
-                )}
               </div>
             )}
           </div>

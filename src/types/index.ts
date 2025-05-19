@@ -6,9 +6,39 @@ export interface UserType {
   role: string;
   phone?: string;
   department?: string;
-  doctor?: DoctorDetails | null;
-  nurse?: NurseDetails | null;
-  patient?: PatientDetails | null;
+  patient?: {
+    id: string;
+    userId: string;
+    dateOfBirth: string;
+    gender: string;
+    address: string;
+    emergencyContact: string;
+  };
+  doctor?: {
+    id: string;
+    userId: string;
+    specialization: string;
+  };
+  nurse?: {
+    id: string;
+    userId: string;
+  };
+  labTechnician?: {
+    id: string;
+    userId: string;
+  };
+  pharmacist?: {
+    id: string;
+    userId: string;
+  };
+  financeStaff?: {
+    id: string;
+    userId: string;
+  };
+  receptionist?: {
+    id: string;
+    userId: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -203,4 +233,33 @@ export interface Appointment {
     name: string;
     age?: number;
   };
+}
+
+export interface AuthResponse {
+  message: string;
+  user: UserType;
+}
+
+export interface Vitals {
+  temperature?: string;
+  heartRate?: number;
+  bloodPressure?: string;
+}
+
+export interface DoctorAppointment {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  appointmentDate: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  reason: string;
+  patientName: string;
+  patientEmail: string;
+  patientPhone: string;
+  symptoms?: string[];
+  vitals?: Vitals;
+}
+
+export interface DoctorAppointmentsResponse {
+  appointments: DoctorAppointment[];
 }

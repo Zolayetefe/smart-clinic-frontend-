@@ -5,13 +5,16 @@ import { useAuth } from '../../../contexts/AuthContext';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import axios from 'axios';
-import { Appointment } from '../../../types';
+import { DoctorAppointment } from '../../../types';
+import { socket } from '../../../utils/socket';
+import { useAppointments } from '../../../contexts/AppointmentContext';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { unseenCount, incrementUnseenCount } = useAppointments();
   
   // Mock data for today's appointments
   const todayAppointments = [
@@ -80,21 +83,47 @@ const DoctorDashboard: React.FC = () => {
           const response = await axios.get(`http://localhost:5000/api/doctor/appointments/${user.doctor.id}`, {
             withCredentials: true
           });
-          setAppointments(response.data);
+          setAppointments(response.data.appointments || []);
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
+        setAppointments([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchAppointments();
-  }, [user]);
+
+    if (user?.doctor?.id) {
+      socket.emit('join-doctor-room', user.doctor.id);
+
+      socket.on('appointment-update', ({ type, appointment }) => {
+        if (type === 'new-appointment') {
+          setAppointments(prev => [...prev, appointment]);
+          incrementUnseenCount();
+        } else if (type === 'update-appointment') {
+          setAppointments(prev => 
+            prev.map(app => app.id === appointment.id ? appointment : app)
+          );
+        } else if (type === 'delete-appointment') {
+          setAppointments(prev => 
+            prev.filter(app => app.id !== appointment.id)
+          );
+        }
+      });
+    }
+
+    return () => {
+      if (user?.doctor?.id) {
+        socket.off('appointment-update');
+      }
+    };
+  }, [user, incrementUnseenCount]);
 
   // Filter today's appointments
   const todayAppointmentsFiltered = appointments.filter(appointment => {
-    const appointmentDate = new Date(appointment.dateTime);
+    const appointmentDate = new Date(appointment.appointmentDate);
     const today = new Date();
     return appointmentDate.toDateString() === today.toDateString();
   });
@@ -113,11 +142,16 @@ const DoctorDashboard: React.FC = () => {
           <div className="mt-4 md:mt-0">
             <Button 
               variant="outline" 
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 relative"
               rightIcon={<ArrowRight className="h-4 w-4" />}
               onClick={() => navigate('/doctor/appointments')}
             >
               View Schedule
+              {unseenCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unseenCount}
+                </span>
+              )}
             </Button>
           </div>
         </div>
@@ -203,18 +237,21 @@ const DoctorDashboard: React.FC = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center">
                     <h4 className="text-base font-medium text-gray-900">
-                      Patient ID: {appointment.patientId}
+                      {appointment.patientName}
                     </h4>
                   </div>
                   <p className="text-sm text-gray-500">{appointment.reason}</p>
                   <div className="mt-2 flex items-center">
                     <Clock className="h-4 w-4 text-gray-400 mr-1" />
                     <span className="text-sm text-gray-600">
-                      {new Date(appointment.dateTime).toLocaleTimeString([], { 
+                      {new Date(appointment.appointmentDate).toLocaleTimeString([], { 
                         hour: '2-digit', 
                         minute: '2-digit' 
                       })}
                     </span>
+                  </div>
+                  <div className="mt-1 text-sm text-gray-500">
+                    {appointment.patientEmail} • {appointment.patientPhone}
                   </div>
                 </div>
                 <div className="ml-4">
@@ -222,7 +259,11 @@ const DoctorDashboard: React.FC = () => {
                     inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
                     ${appointment.status === 'confirmed' 
                       ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
+                      : appointment.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : appointment.status === 'cancelled'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
                     }
                   `}>
                     {appointment.status}
