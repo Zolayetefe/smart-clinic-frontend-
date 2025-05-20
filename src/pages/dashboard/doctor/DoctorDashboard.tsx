@@ -6,7 +6,7 @@ import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import axios from 'axios';
 import { DoctorAppointment } from '../../../types';
-import { socket } from '../../../utils/socket';
+// import { socket } from '../../../utils/socket';
 import { useAppointments } from '../../../contexts/AppointmentContext';
 
 const DoctorDashboard: React.FC = () => {
@@ -95,30 +95,30 @@ const DoctorDashboard: React.FC = () => {
 
     fetchAppointments();
 
-    if (user?.doctor?.id) {
-      socket.emit('join-doctor-room', user.doctor.id);
+    // if (user?.doctor?.id) {
+    //   socket.emit('join-doctor-room', user.doctor.id);
 
-      socket.on('appointment-update', ({ type, appointment }) => {
-        if (type === 'new-appointment') {
-          setAppointments(prev => [...prev, appointment]);
-          incrementUnseenCount();
-        } else if (type === 'update-appointment') {
-          setAppointments(prev => 
-            prev.map(app => app.id === appointment.id ? appointment : app)
-          );
-        } else if (type === 'delete-appointment') {
-          setAppointments(prev => 
-            prev.filter(app => app.id !== appointment.id)
-          );
-        }
-      });
-    }
+    //   socket.on('appointment-update', ({ type, appointment }) => {
+    //     if (type === 'new-appointment') {
+    //       setAppointments(prev => [...prev, appointment]);
+    //       incrementUnseenCount();
+    //     } else if (type === 'update-appointment') {
+    //       setAppointments(prev => 
+    //         prev.map(app => app.id === appointment.id ? appointment : app)
+    //       );
+    //     } else if (type === 'delete-appointment') {
+    //       setAppointments(prev => 
+    //         prev.filter(app => app.id !== appointment.id)
+    //       );
+    //     }
+    //   });
+    // }
 
-    return () => {
-      if (user?.doctor?.id) {
-        socket.off('appointment-update');
-      }
-    };
+    // return () => {
+    //   if (user?.doctor?.id) {
+    //     socket.off('appointment-update');
+    //   }
+    // };
   }, [user, incrementUnseenCount]);
 
   // Filter today's appointments

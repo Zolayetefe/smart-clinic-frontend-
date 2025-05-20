@@ -492,6 +492,9 @@ const StaffManagement: React.FC = () => {
                 <option value="lab_technician">Lab Technician</option>
                 <option value="pharmacist">Pharmacist</option>
                 <option value="receptionist">Receptionist</option>
+                <option value="admin">Admin</option>
+                <option value="finance">Finance Staff</option>
+
               </select>
             </div>
           </div>

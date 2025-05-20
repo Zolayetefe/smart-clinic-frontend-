@@ -6,7 +6,7 @@ import { Calendar, Clock, User } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DoctorAppointment} from '../../../types';
-import { socket } from '../../../utils/socket';
+// import { socket } from '../../../utils/socket';
 import { useAppointments } from '../../../contexts/AppointmentContext';
 
 interface Vitals {
@@ -64,48 +64,48 @@ const DoctorAppointments: React.FC = () => {
     fetchAppointments();
 
     // Socket connection and event handling
-    if (user?.doctor?.id) {
-      // Join both role and doctor-specific rooms
-      socket.emit('join-role-room', 'doctor');
-      socket.emit('join-doctor-room', user.doctor.id);
+    // if (user?.doctor?.id) {
+    //   // Join both role and doctor-specific rooms
+    //   socket.emit('join-role-room', 'doctor');
+    //   socket.emit('join-doctor-room', user.doctor.id);
 
-      // Listen for appointment updates
-      socket.on('appointment-update', ({ type, appointment, triage, slot }) => {
-        console.log('Received appointment update:', { type, appointment, triage, slot });
+    //   // Listen for appointment updates
+    //   socket.on('appointment-update', ({ type, appointment, triage, slot }) => {
+    //     console.log('Received appointment update:', { type, appointment, triage, slot });
         
-        switch (type) {
-          case 'new-appointment':
-            setAppointments(prev => {
-              // Check if appointment already exists
-              const exists = prev.some(app => app.id === appointment.id);
-              if (exists) return prev;
-              return [...prev, appointment];
-            });
-            break;
+    //     switch (type) {
+    //       case 'new-appointment':
+    //         setAppointments(prev => {
+    //           // Check if appointment already exists
+    //           const exists = prev.some(app => app.id === appointment.id);
+    //           if (exists) return prev;
+    //           return [...prev, appointment];
+    //         });
+    //         break;
             
-          case 'update-appointment':
-            setAppointments(prev => 
-              prev.map(app => app.id === appointment.id ? { ...app, ...appointment } : app)
-            );
-            break;
+    //       case 'update-appointment':
+    //         setAppointments(prev => 
+    //           prev.map(app => app.id === appointment.id ? { ...app, ...appointment } : app)
+    //         );
+    //         break;
             
-          case 'delete-appointment':
-            setAppointments(prev => 
-              prev.filter(app => app.id !== appointment.id)
-            );
-            break;
-        }
-      });
-    }
+    //       case 'delete-appointment':
+    //         setAppointments(prev => 
+    //           prev.filter(app => app.id !== appointment.id)
+    //         );
+    //         break;
+    //     }
+    //   });
+    // }
 
     // Cleanup
-    return () => {
-      if (user?.doctor?.id) {
-        socket.off('appointment-update');
-        socket.emit('leave-role-room', 'doctor');
-        socket.emit('leave-doctor-room', user.doctor.id);
-      }
-    };
+    // return () => {
+    //   if (user?.doctor?.id) {
+    //     socket.off('appointment-update');
+    //     socket.emit('leave-role-room', 'doctor');
+    //     socket.emit('leave-doctor-room', user.doctor.id);
+    //   }
+    // };
   }, [user, resetUnseenCount]);
 
   const today = new Date();

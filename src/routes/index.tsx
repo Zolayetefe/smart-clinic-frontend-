@@ -17,9 +17,30 @@ import StaffManagement from '../pages/dashboard/admin/StaffManagement';
 import Analytics from '../pages/dashboard/admin/Analytics';
 import NurseDashboard from '../pages/dashboard/nurse/NurseDashboard';
 import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistDashboard';
+import FinanceDashboard from '../pages/dashboard/financeStaff/financeDashboard';
 
 const AppRoutes = () => {
   const { user } = useAuth();
+
+  // Helper function to get default route based on user role
+  const getDefaultRoute = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return '/admin';
+      case 'doctor':
+        return '/doctor';
+      case 'patient':
+        return '/patient';
+      case 'nurse':
+        return '/nurse';
+      case 'receptionist':
+        return '/receptionist';
+      case 'lab_technician':
+        return '/lab_technician';
+      default:
+        return '/';
+    }
+  };
 
   // Protected Route component
   const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: string[] }) => {
@@ -34,7 +55,7 @@ const AppRoutes = () => {
     
     if (!allowedRoles.includes(userRole)) {
       console.log('Access denied. User role:', userRole, 'Allowed roles:', allowedRoles);
-      return <Navigate to="/" />;
+      return <Navigate to={getDefaultRoute(userRole)} />;
     }
 
     return <>{children}</>;
@@ -52,11 +73,17 @@ const AppRoutes = () => {
       <Route
         path="/"
         element={
-          <ProtectedRoute allowedRoles={['admin', 'doctor', 'patient', 'nurse', 'lab_technician', 'pharmacist', 'receptionist', 'finance_staff']}>
+          <ProtectedRoute allowedRoles={['admin', 'doctor', 'patient', 'nurse', 'lab_technician', 'pharmacist', 'receptionist', 'finance']}>
             <DashboardLayout />
           </ProtectedRoute>
         }
       >
+        {/* Root redirect based on role */}
+        <Route
+          index
+          element={<Navigate to={user ? getDefaultRoute(user.role) : '/login'} replace />}
+        />
+
         {/* Admin routes */}
         <Route
           path="/admin"
@@ -180,9 +207,19 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Default redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/finance"
+          element={
+            <ProtectedRoute allowedRoles={['finance']}>
+              <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* Update the catch-all route to use role-based redirect */}
+        <Route 
+          path="*" 
+          element={<Navigate to={user ? getDefaultRoute(user.role) : '/login'} replace />} 
+        />
       </Route>
     </Routes>
   );

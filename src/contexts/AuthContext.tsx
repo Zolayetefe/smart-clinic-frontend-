@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import { UserType, AuthResponse } from '../types';
-import { disconnectSocket } from '../utils/socket';
+// import { disconnectSocket } from '../utils/socket';
 
 // Define response types
 interface ApiResponse<T = any> {
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout function
   const logout = () => {
     setUser(null);
-    disconnectSocket();
+    // disconnectSocket();
   };
 
   // Add response interceptor for handling token expiration

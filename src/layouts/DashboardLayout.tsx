@@ -67,6 +67,10 @@ const DashboardLayout: React.FC = () => {
           { name: 'Dashboard', href: '/receptionist', icon: <Home className="h-5 w-5" /> },
           // { name: 'Book Appointment', href: '/patient/book-appointment', icon: <UserPlus className="h-5 w-5" /> },
         ];
+      case 'finance':
+        return [
+          { name: 'Dashboard', href: '/finance', icon: <Home className="h-5 w-5" /> },
+        ];
       default:
         return [];
     }
