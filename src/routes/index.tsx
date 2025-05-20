@@ -17,7 +17,7 @@ import StaffManagement from '../pages/dashboard/admin/StaffManagement';
 import Analytics from '../pages/dashboard/admin/Analytics';
 import NurseDashboard from '../pages/dashboard/nurse/NurseDashboard';
 import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistDashboard';
-import FinanceDashboard from '../pages/dashboard/financeStaff/financeDashboard';
+import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
 
 const AppRoutes = () => {
   const { user } = useAuth();
