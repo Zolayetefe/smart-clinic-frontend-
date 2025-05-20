@@ -181,11 +181,11 @@ const Appointments = () => {
                     Book an Appointment
                   </Button>
                 </Link>
-              </div>
+          </div>
             )}
           </CardBody>
         </Card>
-
+        
         {/* Past Appointments */}
         <Card>
           <CardHeader>
@@ -203,7 +203,7 @@ const Appointments = () => {
             ) : (
               <div className="text-center py-4">
                 <p className="text-gray-500">No past appointments found.</p>
-              </div>
+          </div>
             )}
           </CardBody>
         </Card>

@@ -127,7 +127,7 @@ const DoctorDashboard: React.FC = () => {
     const today = new Date();
     return appointmentDate.toDateString() === today.toDateString();
   });
-
+  
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Section */}
@@ -256,15 +256,15 @@ const DoctorDashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <span className={`
-                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                      inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
                     ${appointment.status === 'confirmed' 
-                      ? 'bg-green-100 text-green-800' 
+                        ? 'bg-green-100 text-green-800' 
                       : appointment.status === 'pending'
                         ? 'bg-yellow-100 text-yellow-800'
                         : appointment.status === 'cancelled'
                           ? 'bg-red-100 text-red-800'
                           : 'bg-gray-100 text-gray-800'
-                    }
+                      }
                   `}>
                     {appointment.status}
                   </span>

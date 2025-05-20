@@ -371,12 +371,12 @@ const StaffManagement: React.FC = () => {
 
       await api.post('/admin/staff/register', submitData);
       
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        role: '',
-        phone: '',
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      role: '',
+      phone: '',
         specialization: '',
         availabilities: [],
       });
@@ -475,18 +475,18 @@ const StaffManagement: React.FC = () => {
           {/* Role Section */}
           <div className="pb-6 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Staff Role</h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                required
-              >
-                <option value="">Select Role</option>
+                  required
+                >
+                  <option value="">Select Role</option>
                 <option value="doctor">Doctor</option>
                 <option value="nurse">Nurse</option>
                 <option value="lab_technician">Lab Technician</option>
@@ -516,9 +516,9 @@ const StaffManagement: React.FC = () => {
                     {specialties.map((specialty) => (
                       <option key={specialty.id} value={specialty.id}>
                         {specialty.name}
-                      </option>
-                    ))}
-                  </select>
+                    </option>
+                  ))}
+                </select>
                 </div>
               </div>
 
@@ -539,31 +539,31 @@ const StaffManagement: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+              </div>
 
         {/* Form Actions */}
         <div className="pt-6 border-t border-gray-200">
           <div className="flex justify-end gap-3">
-            <Button
+                <Button
               type="button" 
-              variant="outline"
+                  variant="outline"
               onClick={() => setShowForm(false)}
               className="px-4 py-2"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
               isLoading={loading}
               className="px-4 py-2"
-            >
+                >
               Register Staff
-            </Button>
+                </Button>
           </div>
-        </div>
-      </form>
-    </div>
+              </div>
+            </form>
+          </div>
   );
 
   return (

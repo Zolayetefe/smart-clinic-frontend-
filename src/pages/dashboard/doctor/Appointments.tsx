@@ -142,28 +142,28 @@ const DoctorAppointments: React.FC = () => {
       return <p className="text-gray-500 text-center py-4">No appointments</p>;
     }
 
-    return (
-      <div className="divide-y divide-gray-200">
-        {appointments.map((appointment) => (
-          <div key={appointment.id} className="py-4 flex items-start">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-gray-400" />
+  return (
+            <div className="divide-y divide-gray-200">
+              {appointments.map((appointment) => (
+                <div key={appointment.id} className="py-4 flex items-start">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-gray-400" />
                 <p className="text-sm font-medium text-gray-900">
                   {appointment.patientName}
                 </p>
-              </div>
-              <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
+                    </div>
+                    <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
                   <span>{formatDateTime(appointment.appointmentDate).date}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
                   <span>{formatDateTime(appointment.appointmentDate).time}</span>
-                </div>
-              </div>
-              <p className="mt-2 text-sm text-gray-600">{appointment.reason}</p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-600">{appointment.reason}</p>
               {appointment.symptoms && appointment.symptoms.length > 0 && (
                 <div className="mt-2">
                   <span className="text-xs text-gray-500">Symptoms: </span>
@@ -188,11 +188,11 @@ const DoctorAppointments: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-            <div className="ml-4">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                appointment.status === 'confirmed' 
-                  ? 'bg-green-100 text-green-800' 
+                  </div>
+                  <div className="ml-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      appointment.status === 'confirmed' 
+                        ? 'bg-green-100 text-green-800' 
                   : appointment.status === 'pending'
                     ? 'bg-yellow-100 text-yellow-800'
                     : appointment.status === 'cancelled'
@@ -200,19 +200,19 @@ const DoctorAppointments: React.FC = () => {
                       : 'bg-gray-100 text-gray-800'
               }`}>
                 {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
                 onClick={() => {/* Handle appointment action */}}
-              >
+                    >
                 View Details
-              </Button>
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
     );
   };
 

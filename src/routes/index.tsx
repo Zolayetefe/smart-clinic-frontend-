@@ -16,6 +16,7 @@ import AdminDashboard from '../pages/dashboard/admin/AdminDashboard';
 import StaffManagement from '../pages/dashboard/admin/StaffManagement';
 import Analytics from '../pages/dashboard/admin/Analytics';
 import NurseDashboard from '../pages/dashboard/nurse/NurseDashboard';
+import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistDashboard';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -158,6 +159,24 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['nurse']}>
               <NurseDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Receptionist routes */}
+        <Route
+          path="/receptionist"
+          element={
+            <ProtectedRoute allowedRoles={['receptionist']}>
+              <ReceptionistDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/receptionist/book-appointment/:patientId"
+          element={
+            <ProtectedRoute allowedRoles={['receptionist']}>
+              <BookAppointment />
             </ProtectedRoute>
           }
         />

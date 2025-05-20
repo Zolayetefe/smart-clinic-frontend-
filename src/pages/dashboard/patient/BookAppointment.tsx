@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar, User, Clock, FileText, ArrowRight, CheckCircle, Activity } from 'lucide-react';
 import axios from 'axios';
 import Button from '../../../components/ui/Button';
@@ -62,6 +62,7 @@ interface AppointmentRequest {
 }
 
 const BookAppointment: React.FC = () => {
+  const { patientId } = useParams(); // Get patientId from URL params
   const navigate = useNavigate();
   const { user } = useAuth(); // Get user data from auth context
   
@@ -149,18 +150,18 @@ const BookAppointment: React.FC = () => {
         return;
       }
 
-      const patientId = user?.patient?.id;
+      // Use patientId from URL params if available (receptionist flow), otherwise use logged-in user's patientId
+      const bookingPatientId = patientId || user?.patient?.id;
       
-      if (!patientId) {
+      if (!bookingPatientId) {
         console.error('Patient ID not found');
         return;
       }
 
-      // Create the appointment data exactly matching the backend format
       const appointmentData: AppointmentRequest = {
-        patientId: patientId,
+        patientId: bookingPatientId,
         doctorId: selectedDoctor,
-        dateTime: selectedSlot.time, // The slot.time should already be in ISO format
+        dateTime: selectedSlot.time,
         reason: bookingReason,
         slotId: selectedSlot.id,
         symptoms: selectedSymptoms.map(symptomId => {
@@ -180,14 +181,17 @@ const BookAppointment: React.FC = () => {
       if (response.data) {
         setIsBookingComplete(true);
         
-        // Navigate to appointments page after successful booking
+        // Navigate based on user role
         setTimeout(() => {
-          navigate('/patient/appointments');
+          if (user?.role.toLowerCase() === 'receptionist') {
+            navigate('/receptionist');
+          } else {
+            navigate('/patient/appointments');
+          }
         }, 3000);
       }
     } catch (error: any) {
       console.error('Error creating appointment:', error.response?.data || error.message);
-      // You might want to show an error message to the user here
     }
   };
   
@@ -286,6 +290,14 @@ const BookAppointment: React.FC = () => {
       </div>
     </div>
   );
+  
+  // Update the success message to be role-specific
+  const getSuccessMessage = () => {
+    if (user?.role.toLowerCase() === 'receptionist') {
+      return "The appointment has been successfully booked for the patient.";
+    }
+    return "Your appointment has been successfully booked. You will receive a confirmation email shortly.";
+  };
   
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
@@ -412,11 +424,11 @@ const BookAppointment: React.FC = () => {
                       <p className="text-sm text-gray-500">Day</p>
                       <p className="font-medium">{selectedSlot.day}</p>
                     </div>
-                    <div>
+              <div>
                       <p className="text-sm text-gray-500">Time</p>
                       <p className="font-medium">{selectedSlot.time}</p>
-                    </div>
-                  </div>
+                </div>
+              </div>
                 </div>
               )}
               
@@ -443,10 +455,10 @@ const BookAppointment: React.FC = () => {
                   </div>
                   <h3 className="mt-4 text-lg font-medium text-gray-900">Appointment Confirmed!</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Your appointment has been successfully booked. You will receive a confirmation email shortly.
+                    {getSuccessMessage()}
                   </p>
                   <p className="mt-4 text-sm font-medium text-primary">
-                    Redirecting to appointments...
+                    Redirecting to {user?.role.toLowerCase() === 'receptionist' ? 'dashboard' : 'appointments'}...
                   </p>
                 </div>
               ) : (

@@ -24,7 +24,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     console.log('Access denied. User role:', userRole, 'Allowed roles:', normalizedAllowedRoles);
     return <Navigate to="/" />;
   }
-
+  
   return <>{children}</>;
 };
 

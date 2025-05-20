@@ -151,44 +151,44 @@ const Register: React.FC = () => {
       
       <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            id="name"
-            name="name"
-            type="text"
-            label="Full Name"
-            autoComplete="name"
-            required
-            value={formData.name}
-            onChange={handleChange}
-            error={errors.name}
-            leftAddon={<User className="h-5 w-5 text-gray-400" />}
-          />
-          
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            label="Email address"
-            autoComplete="email"
-            required
-            value={formData.email}
-            onChange={handleChange}
-            error={errors.email}
-            leftAddon={<Mail className="h-5 w-5 text-gray-400" />}
-          />
-          
-          <Input
-            id="phone"
-            name="phone"
-            type="tel"
-            label="Phone Number"
-            autoComplete="tel"
-            required
-            value={formData.phone}
-            onChange={handleChange}
-            error={errors.phone}
-            leftAddon={<Phone className="h-5 w-5 text-gray-400" />}
-          />
+        <Input
+          id="name"
+          name="name"
+          type="text"
+          label="Full Name"
+          autoComplete="name"
+          required
+          value={formData.name}
+          onChange={handleChange}
+          error={errors.name}
+          leftAddon={<User className="h-5 w-5 text-gray-400" />}
+        />
+        
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          label="Email address"
+          autoComplete="email"
+          required
+          value={formData.email}
+          onChange={handleChange}
+          error={errors.email}
+          leftAddon={<Mail className="h-5 w-5 text-gray-400" />}
+        />
+        
+        <Input
+          id="phone"
+          name="phone"
+          type="tel"
+          label="Phone Number"
+          autoComplete="tel"
+          required
+          value={formData.phone}
+          onChange={handleChange}
+          error={errors.phone}
+          leftAddon={<Phone className="h-5 w-5 text-gray-400" />}
+        />
 
           <Input
             id="dateOfBirth"
@@ -249,33 +249,33 @@ const Register: React.FC = () => {
               leftAddon={<MapPin className="h-5 w-5 text-gray-400" />}
             />
           </div>
-          
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            label="Password"
-            autoComplete="new-password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-            error={errors.password}
-            leftAddon={<Lock className="h-5 w-5 text-gray-400" />}
-            helperText="Password must be at least 6 characters"
-          />
-          
-          <Input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            label="Confirm Password"
-            autoComplete="new-password"
-            required
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            error={errors.confirmPassword}
-            leftAddon={<Lock className="h-5 w-5 text-gray-400" />}
-          />
+        
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          label="Password"
+          autoComplete="new-password"
+          required
+          value={formData.password}
+          onChange={handleChange}
+          error={errors.password}
+          leftAddon={<Lock className="h-5 w-5 text-gray-400" />}
+          helperText="Password must be at least 6 characters"
+        />
+        
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          label="Confirm Password"
+          autoComplete="new-password"
+          required
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          error={errors.confirmPassword}
+          leftAddon={<Lock className="h-5 w-5 text-gray-400" />}
+        />
         </div>
         
         {errors.submit && (
