@@ -4,6 +4,8 @@ import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -50,6 +52,7 @@ const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const loginToast = toast.loading('Logging in...');
     setErrors({});
     setError(null);
     setIsLoading(true);
@@ -83,6 +86,10 @@ const Login: React.FC = () => {
         const route = roleRoutes[role] || '/';
         console.log('Navigating to:', route);
         navigate(route);
+
+        toast.success('Logged in successfully!', {
+          id: loginToast
+        });
       } else {
         console.error('No user data after successful login');
         setError('Login successful but user data is missing');
@@ -94,6 +101,11 @@ const Login: React.FC = () => {
       } else {
         setError('An unexpected error occurred');
       }
+
+      toast.error(
+        error instanceof Error ? error.message : 'An unexpected error occurred',
+        { id: loginToast }
+      );
     } finally {
       setIsLoading(false);
     }

@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
 import { useAuth } from '../../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 // Specialty options for doctor selection
 const specialties = [
@@ -99,11 +100,16 @@ const BookAppointment: React.FC = () => {
   
   // Get AI recommendation
   const getAiRecommendation = () => {
+    if (selectedSymptoms.length === 0) {
+      toast.error('Please select at least one symptom');
+      return;
+    }
+
     setIsAiRecommending(true);
+    const aiToast = toast.loading('Getting AI recommendation...');
     
     // Simulate AI processing delay
     setTimeout(() => {
-      // Simple matching algorithm - find most matched specialty
       const symptomObjects = commonSymptoms.filter(s => selectedSymptoms.includes(s.id));
       const specialtyCounts: Record<string, number> = {};
       
@@ -113,7 +119,6 @@ const BookAppointment: React.FC = () => {
         });
       });
       
-      // Find specialty with highest count
       let maxCount = 0;
       let recommendedSpecialty = 'general';
       
@@ -127,6 +132,10 @@ const BookAppointment: React.FC = () => {
       setAiRecommendation(recommendedSpecialty);
       setSelectedSpecialty(recommendedSpecialty);
       setIsAiRecommending(false);
+      
+      toast.success('AI recommendation received', {
+        id: aiToast
+      });
     }, 1500);
   };
   
@@ -137,24 +146,28 @@ const BookAppointment: React.FC = () => {
         withCredentials: true
       });
       setDoctors(response.data.doctors);
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
+      if (response.data.doctors.length === 0) {
+        toast.error('No doctors available for this specialty');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to fetch doctors');
     }
   };
   
   // Update the confirmBooking function
   const confirmBooking = async () => {
+    const bookingToast = toast.loading('Booking appointment...');
+    
     try {
       if (!selectedDoctor || !selectedSlot) {
-        console.error('Missing required booking information');
+        toast.error('Missing required booking information');
         return;
       }
 
-      // Use patientId from URL params if available (receptionist flow), otherwise use logged-in user's patientId
       const bookingPatientId = patientId || user?.patient?.id;
       
       if (!bookingPatientId) {
-        console.error('Patient ID not found');
+        toast.error('Patient ID not found');
         return;
       }
 
@@ -170,8 +183,6 @@ const BookAppointment: React.FC = () => {
         }).filter(Boolean)
       };
 
-      console.log('Sending appointment data:', appointmentData);
-
       const response = await axios.post(
         'http://localhost:5000/api/patient/book-appointment', 
         appointmentData,
@@ -179,19 +190,25 @@ const BookAppointment: React.FC = () => {
       );
 
       if (response.data) {
-        setIsBookingComplete(true);
-        
+        toast.success('Appointment booked successfully!', {
+          id: bookingToast
+        });
+    setIsBookingComplete(true);
+    
         // Navigate based on user role
-        setTimeout(() => {
+    setTimeout(() => {
           if (user?.role.toLowerCase() === 'receptionist') {
             navigate('/receptionist');
           } else {
-            navigate('/patient/appointments');
+      navigate('/patient/appointments');
           }
-        }, 3000);
+        }, 2000);
       }
     } catch (error: any) {
-      console.error('Error creating appointment:', error.response?.data || error.message);
+      toast.error(
+        error.response?.data?.message || 'Failed to book appointment',
+        { id: bookingToast }
+      );
     }
   };
   

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 // Update interface to match AuthContext's RegisterData
 interface RegisterFormData {
@@ -110,7 +111,8 @@ const Register: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    const registerToast = toast.loading('Creating account...');
+
     if (!validateForm()) return;
     
     setIsLoading(true);
@@ -118,28 +120,29 @@ const Register: React.FC = () => {
     
     try {
       const { confirmPassword, ...registrationData } = formData;
-      await register(registrationData);
+      const response = await axios.post('http://localhost:5000/api/auth/register', registrationData);
       
-      // Show success message
-      toast.success('Registration successful! Please login to continue.', {
-        duration: 3000,
-      });
-      
-      // Navigate to login page after a short delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-
+      if (response.data) {
+        toast.success('Account created successfully!', {
+          id: registerToast
+        });
+        await register(registrationData);
+        
+        // Navigate to login page after a short delay
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       setErrors({
-        submit: error.message || 'Registration failed. Please try again.'
+        submit: error.response?.data?.message || 'Registration failed. Please try again.'
       });
       
-      // Show error toast
-      toast.error(error.message || 'Registration failed. Please try again.', {
-        duration: 4000,
-      });
+      toast.error(
+        error.response?.data?.message || 'Registration failed. Please try again.',
+        { id: registerToast }
+      );
     } finally {
       setIsLoading(false);
     }

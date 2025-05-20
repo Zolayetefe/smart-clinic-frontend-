@@ -5,6 +5,7 @@ import Card, { CardHeader, CardBody } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import axios from 'axios';
 import { useAuth } from '../../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface Patient {
   id: string;
@@ -31,8 +32,8 @@ const ReceptionistDashboard: React.FC = () => {
         });
         setPatients(response.data.patients);
         setFilteredPatients(response.data.patients);
-      } catch (error) {
-        console.error('Error fetching patients:', error);
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to fetch patients');
       } finally {
         setLoading(false);
       }
