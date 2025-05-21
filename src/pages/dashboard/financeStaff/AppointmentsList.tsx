@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Calendar, Mail, Phone, CheckCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Calendar, Mail, Phone, CheckCircle, DollarSign } from 'lucide-react';
 import Card, { CardHeader, CardBody } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -55,6 +55,11 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
     }
   };
 
+  const formatAmount = (amount: string | null) => {
+    if (!amount) return '0.00';
+    return Number(amount).toFixed(2);
+  };
+
   return (
     <div className="space-y-6">
       {/* Search Section */}
@@ -78,7 +83,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
       {/* Appointments List */}
       <Card>
         <CardHeader>
-          <h3 className="text-lg font-medium text-gray-900">Pending Appointments</h3>
+          <h3 className="text-lg font-medium text-gray-900">Appointments</h3>
         </CardHeader>
         <CardBody className="p-0">
           <div className="overflow-x-auto">
@@ -142,28 +147,40 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
                         }`}>
                           Status: {appointment.status}
                         </span>
+                        {appointment.financeStatus === 'approved' && (
+                          <div className="flex items-center text-green-600">
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            <span className="text-sm font-medium">
+                              Amount Paid: ${formatAmount(appointment.amount)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-2">
-                        <Input
-                          type="number"
-                          placeholder="Enter amount"
-                          value={amount[appointment.id] || ''}
-                          onChange={(e) => setAmount({
-                            ...amount,
-                            [appointment.id]: e.target.value
-                          })}
-                          className="w-32"
-                        />
-                        <Button
-                          onClick={() => handleApprove(appointment.id)}
-                          disabled={!amount[appointment.id]}
-                          className="flex items-center"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </Button>
+                        {!appointment.financeStatus && (
+                          <>
+                            <Input
+                              type="number"
+                              placeholder="Enter amount"
+                              value={amount[appointment.id] || ''}
+                              onChange={(e) => setAmount({
+                                ...amount,
+                                [appointment.id]: e.target.value
+                              })}
+                              className="w-32"
+                            />
+                            <Button
+                              onClick={() => handleApprove(appointment.id)}
+                              disabled={!amount[appointment.id]}
+                              className="flex items-center"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

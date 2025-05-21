@@ -12,7 +12,7 @@ export interface FinanceAppointment {
   reason: string;
   appointmentDate: string;
   financeStatus: string | null;
-  amount?: number;
+  amount: string | null;
 }
 
 export interface ApprovalRequest {

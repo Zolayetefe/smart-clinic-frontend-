@@ -14,7 +14,11 @@ const Stats: React.FC<StatsProps> = ({ appointments }) => {
     rejected: appointments.filter(app => app.status === 'rejected').length,
     totalAmount: appointments
       .filter(app => app.financeStatus === 'approved')
-      .reduce((sum, app) => sum + (app.amount || 0), 0)
+      .reduce((sum, app) => {
+        // Convert string amount to number or use 0 if null/undefined
+        const amount = app.amount ? parseFloat(app.amount) : 0;
+        return sum + amount;
+      }, 0)
   };
 
   return (

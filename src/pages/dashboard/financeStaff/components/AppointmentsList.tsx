@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Search, 
   Calendar, 
@@ -21,12 +21,12 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useAuth } from '../../../../contexts/AuthContext';
 
+type TabType = 'all' | 'pending' | 'approved' | 'rejected';
+
 interface AppointmentsListProps {
   appointments: FinanceAppointment[];
   onApprovalSuccess: () => void;
 }
-
-type TabType = 'all' | 'pending' | 'approved' | 'rejected';
 
 const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApprovalSuccess }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +34,8 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const { user } = useAuth();
 
-  const filterAppointments = () => {
+  // Use useMemo to prevent unnecessary filtering on every render
+  const filteredAppointments = useMemo(() => {
     let filtered = appointments;
 
     if (activeTab !== 'all') {
@@ -46,16 +47,17 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
     }
 
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
         app =>
-          app.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          app.patientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          app.doctor.toLowerCase().includes(searchTerm.toLowerCase())
+          app.patient.toLowerCase().includes(searchLower) ||
+          app.patientEmail.toLowerCase().includes(searchLower) ||
+          app.doctor.toLowerCase().includes(searchLower)
       );
     }
 
     return filtered;
-  };
+  }, [appointments, activeTab, searchTerm]);
 
   const handleApprove = async (appointmentId: string) => {
     if (!amount[appointmentId] || isNaN(Number(amount[appointmentId]))) {
@@ -156,7 +158,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
 
       {/* Appointments Cards */}
       <div className="grid grid-cols-1 gap-4">
-        {filterAppointments().map((appointment) => {
+        {filteredAppointments.map((appointment) => {
           const dateTime = formatDateTime(appointment.appointmentDate);
           return (
             <Card key={appointment.id}>
@@ -229,7 +231,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
                             <div className="flex items-center text-green-600">
                               <DollarSign className="h-4 w-4 mr-2" />
                               <span className="text-sm font-medium">
-                                Amount Paid: ${appointment.amount?.toFixed(2)}
+                                Amount Paid: ${appointment.amount}
                               </span>
                             </div>
                           )}
