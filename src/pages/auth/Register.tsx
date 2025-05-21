@@ -113,25 +113,31 @@ const Register: React.FC = () => {
     e.preventDefault();
     const registerToast = toast.loading('Creating account...');
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error('Please check all required fields', { id: registerToast });
+      return;
+    }
     
     setIsLoading(true);
     setErrors({});
     
     try {
       const { confirmPassword, ...registrationData } = formData;
-      const response = await axios.post('http://localhost:5000/api/auth/register', registrationData);
+      const response = await axios.post('http://localhost:5000/api/auth/patient/register', registrationData);
       
       if (response.data) {
-        toast.success('Account created successfully!', {
-          id: registerToast
+        toast.success('Account created successfully! Please login.', {
+          id: registerToast,
+          duration: 3000
         });
-        await register(registrationData);
         
-        // Navigate to login page after a short delay
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        // Navigate to login immediately after successful registration
+        navigate('/login', { 
+          state: { 
+            email: formData.email,
+            message: 'Registration successful! Please login with your credentials.'
+          }
+        });
       }
     } catch (error: any) {
       console.error('Registration error:', error);

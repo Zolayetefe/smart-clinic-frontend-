@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (data: any): Promise<void> => {
     setLoading(true);
     try {
-      const response = await api.post<AuthResponse>('/auth/register', data);
+      const response = await api.post<AuthResponse>('/auth/patient/register', data);
       
       if (response.data.user) {
         setUser(response.data.user);
