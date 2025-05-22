@@ -3,6 +3,8 @@ import Card, { CardHeader, CardBody } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import axios from 'axios';
+import { format } from 'date-fns';
+import LabResultSidebar from './LabResult';
 
 interface Test {
   testName: string;
@@ -24,18 +26,35 @@ interface LabRequest {
 }
 
 interface LabResult {
-  [key: string]: string;
+  id: string;
+  labRequestId: string;
+  patientId: string;
+  patient: string;
+  patientEmail: string;
+  doctorId: string;
+  doctor: string;
+  doctorEmail: string;
+  result: Record<string, string>;
+  notes: string;
+  createdAt: string;
+  priority: string | null;
+  tests: Test[];
+  requestedAt: string;
+  completedAt: string;
 }
 
 const LabTechnician: React.FC = () => {
   const [labRequests, setLabRequests] = useState<LabRequest[]>([]);
+  const [labResults, setLabResults] = useState<LabResult[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LabRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<LabRequest | null>(null);
+  const [selectedResult, setSelectedResult] = useState<LabResult | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
-  const [labResult, setLabResult] = useState<LabResult>({});
+  const [showResultDetailModal, setShowResultDetailModal] = useState(false);
+  const [labResultInput, setLabResultInput] = useState<Record<string, string>>({});
   const [resultNotes, setResultNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState<'name' | 'email'>('name');
@@ -57,8 +76,19 @@ const LabTechnician: React.FC = () => {
     }
   };
 
+  const fetchLabResults = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/lab/results', {
+        withCredentials: true
+      });
+      setLabResults(response.data.labResults);
+    } catch (err) {
+      console.error('Failed to fetch lab results:', err);
+    }
+  };
+
   useEffect(() => {
-    fetchLabRequests();
+    Promise.all([fetchLabRequests(), fetchLabResults()]);
   }, []);
 
   // Filter lab requests based on search query
@@ -73,7 +103,6 @@ const LabTechnician: React.FC = () => {
       if (searchFilter === 'name') {
         return request.patient.toLowerCase().includes(query);
       } else if (searchFilter === 'email') {
-        // Safely handle email search even if email is undefined
         const email = request.patientEmail || '';
         return email.toLowerCase().includes(query);
       }
@@ -88,7 +117,7 @@ const LabTechnician: React.FC = () => {
     try {
       await axios.post('http://localhost:5000/api/lab/result', {
         labRequestId: selectedRequest.id,
-        result: labResult,
+        result: labResultInput,
         notes: resultNotes
       }, {
         withCredentials: true
@@ -96,9 +125,9 @@ const LabTechnician: React.FC = () => {
 
       setShowResultModal(false);
       setSelectedRequest(null);
-      setLabResult({});
+      setLabResultInput({});
       setResultNotes('');
-      fetchLabRequests(); // Refresh the list
+      await Promise.all([fetchLabRequests(), fetchLabResults()]); // Refresh both lists
     } catch (err) {
       setError('Failed to submit lab result');
       console.error(err);
@@ -109,240 +138,326 @@ const LabTechnician: React.FC = () => {
   const completedCount = filteredRequests.filter((r) => r.status === 'completed').length;
 
   return (
-    <div className="p-6 space-y-6 bg-white min-h-screen">
-      <h1 className="text-2xl font-bold text-center">Lab Technician Dashboard</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6 space-y-6">
+        <h1 className="text-2xl font-bold text-center mb-6">Lab Technician Dashboard</h1>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
+        {/* Dashboard Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold">Pending Requests</h2>
+            </CardHeader>
+            <CardBody>
+              <p className="text-3xl text-yellow-600">{pendingCount}</p>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold">Completed Requests</h2>
+            </CardHeader>
+            <CardBody>
+              <p className="text-3xl text-green-600">{completedCount}</p>
+            </CardBody>
+          </Card>
         </div>
-      )}
 
-      {/* Dashboard Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <h2 className="text-xl font-semibold">Pending Requests</h2>
-          </CardHeader>
-          <CardBody>
-            <p className="text-3xl text-yellow-600">{pendingCount}</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader>
-            <h2 className="text-xl font-semibold">Completed Requests</h2>
-          </CardHeader>
-          <CardBody>
-            <p className="text-3xl text-green-600">{completedCount}</p>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Search Section */}
-      <div className="mb-4 flex gap-4 items-end">
-        <div className="flex-1">
-          <Input
-            label="Search Patients"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search by patient ${searchFilter}...`}
-          />
+        {/* Search Section */}
+        <div className="mb-4 flex gap-4 items-end">
+          <div className="flex-1">
+            <Input
+              label="Search Patients"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search by patient ${searchFilter}...`}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setSearchFilter('name')}
+              className={`px-4 py-2 ${
+                searchFilter === 'name'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              Search by Name
+            </Button>
+            <Button
+              onClick={() => setSearchFilter('email')}
+              className={`px-4 py-2 ${
+                searchFilter === 'email'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              Search by Email
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setSearchFilter('name')}
-            className={`px-4 py-2 ${
-              searchFilter === 'name'
-                ? 'bg-primary text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            Search by Name
-          </Button>
-          <Button
-            onClick={() => setSearchFilter('email')}
-            className={`px-4 py-2 ${
-              searchFilter === 'email'
-                ? 'bg-primary text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            Search by Email
-          </Button>
-        </div>
-      </div>
 
-      {/* Lab Requests Table */}
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Lab Requests</h2>
-        <div className="overflow-x-auto">
-          {loading ? (
-            <p className="text-center py-4">Loading...</p>
-          ) : filteredRequests.length === 0 ? (
-            <p className="text-center py-4 text-gray-500">
-              {searchQuery
-                ? 'No requests found matching your search'
-                : 'No lab requests available'}
-            </p>
-          ) : (
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border p-2">Patient</th>
-                  <th className="border p-2">Email</th>
-                  <th className="border p-2">Doctor</th>
-                  <th className="border p-2">Priority</th>
-                  <th className="border p-2">Status</th>
-                  <th className="border p-2">Date</th>
-                  <th className="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.map((req) => (
-                  <tr key={req.id}>
-                    <td className="border p-2">{req.patient}</td>
-                    <td className="border p-2">{req.patientEmail || 'N/A'}</td>
-                    <td className="border p-2">{req.doctor}</td>
-                    <td className="border p-2">
-                      {req.priority ? (
-                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded">
-                          {req.priority}
-                        </span>
-                      ) : (
-                        'Normal'
-                      )}
-                    </td>
-                    <td className="border p-2">
-                      <span
-                        className={`px-2 py-1 rounded text-white ${
-                          req.status === 'requested' ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
-                      >
-                        {req.status}
-                      </span>
-                    </td>
-                    <td className="border p-2">
-                      {new Date(req.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="border p-2">
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedRequest(req);
-                            setShowDetailModal(true);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                        {req.status === 'requested' && (
-                          <Button
-                            onClick={() => {
-                              setSelectedRequest(req);
-                              setShowResultModal(true);
-                            }}
+        {/* Lab Requests Table */}
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Lab Requests</h2>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              {loading ? (
+                <p className="text-center py-4">Loading...</p>
+              ) : filteredRequests.length === 0 ? (
+                <p className="text-center py-4 text-gray-500">
+                  {searchQuery
+                    ? 'No requests found matching your search'
+                    : 'No lab requests available'}
+                </p>
+              ) : (
+                <table className="min-w-full border text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border p-2">Patient</th>
+                      <th className="border p-2">Email</th>
+                      <th className="border p-2">Doctor</th>
+                      <th className="border p-2">Priority</th>
+                      <th className="border p-2">Status</th>
+                      <th className="border p-2">Date</th>
+                      <th className="border p-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRequests.map((req) => (
+                      <tr key={req.id}>
+                        <td className="border p-2">{req.patient}</td>
+                        <td className="border p-2">{req.patientEmail || 'N/A'}</td>
+                        <td className="border p-2">{req.doctor}</td>
+                        <td className="border p-2">
+                          {req.priority ? (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded">
+                              {req.priority}
+                            </span>
+                          ) : (
+                            'Normal'
+                          )}
+                        </td>
+                        <td className="border p-2">
+                          <span
+                            className={`px-2 py-1 rounded text-white ${
+                              req.status === 'requested' ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
                           >
-                            Add Result
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-            <h3 className="text-xl font-bold mb-4">Lab Request Details</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="font-semibold">Patient: {selectedRequest.patient}</p>
-                <p className="font-semibold">Email: {selectedRequest.patientEmail || 'N/A'}</p>
-                <p className="font-semibold">Doctor: {selectedRequest.doctor}</p>
-                <p className="font-semibold">Notes: {selectedRequest.notes}</p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Requested Tests:</h4>
-                <div className="space-y-2">
-                  {selectedRequest.tests.map((test, index) => (
-                    <div key={index} className="bg-gray-50 p-3 rounded">
-                      <p className="font-medium">{test.testName}</p>
-                      <p className="text-sm text-gray-600">Reason: {test.reason}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <Button onClick={() => setShowDetailModal(false)}>Close</Button>
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="border p-2">
+                          {format(new Date(req.createdAt), 'MMM dd, yyyy')}
+                        </td>
+                        <td className="border p-2">
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                setSelectedRequest(req);
+                                setShowDetailModal(true);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                            {req.status === 'requested' && (
+                              <Button
+                                onClick={() => {
+                                  setSelectedRequest(req);
+                                  setShowResultModal(true);
+                                }}
+                              >
+                                Add Result
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
-      )}
 
-      {/* Result Submission Modal */}
-      {showResultModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-            <h3 className="text-xl font-bold mb-4">Submit Lab Results</h3>
-            <div className="space-y-4">
-              <div className="mb-4">
-                <h4 className="font-semibold mb-2">Patient Information:</h4>
-                <p>Name: {selectedRequest.patient}</p>
-                <p>Email: {selectedRequest.patientEmail || 'N/A'}</p>
-              </div>
-              <div className="mb-4">
-                <h4 className="font-semibold mb-2">Requested Tests:</h4>
-                {selectedRequest.tests.map((test, index) => (
-                  <div key={index} className="mb-4">
-                    <p className="font-medium">{test.testName}</p>
-                    <Input
-                      label="Result"
-                      value={labResult[test.testName] || ''}
-                      onChange={(e) =>
-                        setLabResult((prev) => ({
-                          ...prev,
-                          [test.testName]: e.target.value,
-                        }))
-                      }
-                    />
+        {/* Detail Modal */}
+        {showDetailModal && selectedRequest && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+              <h3 className="text-xl font-bold mb-4">Lab Request Details</h3>
+              <div className="space-y-4">
+                <div>
+                  <p className="font-semibold">Patient: {selectedRequest.patient}</p>
+                  <p className="font-semibold">Email: {selectedRequest.patientEmail || 'N/A'}</p>
+                  <p className="font-semibold">Doctor: {selectedRequest.doctor}</p>
+                  <p className="font-semibold">Notes: {selectedRequest.notes}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Requested Tests:</h4>
+                  <div className="space-y-2">
+                    {selectedRequest.tests.map((test, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded">
+                        <p className="font-medium">{test.testName}</p>
+                        <p className="text-sm text-gray-600">Reason: {test.reason}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <Button onClick={() => setShowDetailModal(false)}>Close</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Result Submission Modal */}
+        {showResultModal && selectedRequest && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+              <h3 className="text-xl font-bold mb-4">Submit Lab Results</h3>
+              <div className="space-y-4">
+                <div className="mb-4">
+                  <h4 className="font-semibold mb-2">Patient Information:</h4>
+                  <p>Name: {selectedRequest.patient}</p>
+                  <p>Email: {selectedRequest.patientEmail || 'N/A'}</p>
+                </div>
+                <div className="mb-4">
+                  <h4 className="font-semibold mb-2">Requested Tests:</h4>
+                  {selectedRequest.tests.map((test, index) => (
+                    <div key={index} className="mb-4">
+                      <p className="font-medium">{test.testName}</p>
+                      <Input
+                        label="Result"
+                        value={labResultInput[test.testName] || ''}
+                        onChange={(e) =>
+                          setLabResultInput((prev) => ({
+                            ...prev,
+                            [test.testName]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={resultNotes}
+                    onChange={(e) => setResultNotes(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button onClick={handleSubmitResult}>Submit Results</Button>
+                  <Button
+                    onClick={() => {
+                      setShowResultModal(false);
+                      setSelectedRequest(null);
+                      setLabResultInput({});
+                      setResultNotes('');
+                    }}
+                    className="bg-gray-300 text-black"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Result Detail Modal */}
+        {showResultDetailModal && selectedResult && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-xl font-bold">Lab Result Details</h3>
+                <button
+                  onClick={() => {
+                    setShowResultDetailModal(false);
+                    setSelectedResult(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Patient Information</h4>
+                    <p>Name: {selectedResult.patient}</p>
+                    <p>Email: {selectedResult.patientEmail}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Doctor Information</h4>
+                    <p>Name: {selectedResult.doctor}</p>
+                    <p>Email: {selectedResult.doctorEmail}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Test Results</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    {Object.entries(selectedResult.result).map(([test, value]) => (
+                      <div key={test} className="flex justify-between py-2 border-b last:border-0">
+                        <span className="font-medium">{test}:</span>
+                        <span>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Requested Tests</h4>
+                  <div className="space-y-2">
+                    {selectedResult.tests.map((test, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded">
+                        <p className="font-medium">{test.testName}</p>
+                        <p className="text-sm text-gray-600">Reason: {test.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedResult.notes && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Notes</h4>
+                    <p className="bg-gray-50 p-4 rounded-lg">{selectedResult.notes}</p>
+                  </div>
+                )}
+
+                <div className="text-sm text-gray-500">
+                  <p>Requested: {format(new Date(selectedResult.requestedAt), 'PPP')}</p>
+                  <p>Completed: {format(new Date(selectedResult.completedAt), 'PPP')}</p>
+                </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  value={resultNotes}
-                  onChange={(e) => setResultNotes(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <Button onClick={handleSubmitResult}>Submit Results</Button>
+              <div className="mt-6 flex justify-end">
                 <Button
                   onClick={() => {
-                    setShowResultModal(false);
-                    setSelectedRequest(null);
-                    setLabResult({});
-                    setResultNotes('');
+                    setShowResultDetailModal(false);
+                    setSelectedResult(null);
                   }}
-                  className="bg-gray-300 text-black"
                 >
-                  Cancel
+                  Close
                 </Button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

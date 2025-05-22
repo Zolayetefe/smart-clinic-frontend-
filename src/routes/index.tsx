@@ -19,7 +19,7 @@ import NurseDashboard from '../pages/dashboard/nurse/NurseDashboard';
 import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistDashboard';
 import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
 import LabTechnician from '../pages/dashboard/labTechnician/LabTechnician';
-
+import LabResultPage from '../pages/dashboard/labTechnician/LabResultPage';
 const AppRoutes = () => {
   const { user } = useAuth();
 
@@ -225,6 +225,15 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/lab_technician/results"
+          element={
+            <ProtectedRoute allowedRoles={['lab_technician']}>
+              <LabResultPage />
+            </ProtectedRoute> 
+          }
+        />
+        
         {/* Update the catch-all route to use role-based redirect */}
         <Route 
           path="*" 
