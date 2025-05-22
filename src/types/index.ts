@@ -246,6 +246,11 @@ export interface Vitals {
   bloodPressure?: string;
 }
 
+interface VitalReading {
+  type: 'temperature' | 'heartBeat' | 'bloodPressure';
+  value: string;
+}
+
 export interface DoctorAppointment {
   id: string;
   patientId: string;
@@ -257,7 +262,7 @@ export interface DoctorAppointment {
   patientEmail: string;
   patientPhone: string;
   symptoms?: string[];
-  vitals?: Vitals;
+  vitals?: VitalReading[];
 }
 
 export interface DoctorAppointmentsResponse {
