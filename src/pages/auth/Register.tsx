@@ -112,7 +112,7 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const registerToast = toast.loading('Creating account...');
-
+    
     if (!validateForm()) {
       toast.error('Please check all required fields', { id: registerToast });
       return;

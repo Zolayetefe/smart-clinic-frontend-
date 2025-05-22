@@ -3,6 +3,7 @@ import { Activity, FileText, Eye } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
 import axios from 'axios';
 import { format } from 'date-fns';
 
@@ -58,10 +59,18 @@ const LabRequest: React.FC = () => {
   const { user } = useAuth();
   const [labRequests, setLabRequests] = useState<LabRequest[]>([]);
   const [labResults, setLabResults] = useState<LabResult[]>([]);
+  const [filteredLabRequests, setFilteredLabRequests] = useState<LabRequest[]>([]);
+  const [filteredLabResults, setFilteredLabResults] = useState<LabResult[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<LabRequest | null>(null);
   const [selectedResult, setSelectedResult] = useState<LabResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Search states
+  const [requestSearchQuery, setRequestSearchQuery] = useState('');
+  const [requestSearchFilter, setRequestSearchFilter] = useState<'name' | 'email'>('name');
+  const [resultSearchQuery, setResultSearchQuery] = useState('');
+  const [resultSearchFilter, setResultSearchFilter] = useState<'name' | 'email'>('name');
 
   // Separate functions for API calls
   const fetchLabRequests = async () => {
@@ -124,6 +133,8 @@ const LabRequest: React.FC = () => {
         ]);
         setLabRequests(requests);
         setLabResults(results);
+        setFilteredLabRequests(requests);
+        setFilteredLabResults(results);
         setError(null);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -135,6 +146,46 @@ const LabRequest: React.FC = () => {
 
     loadData();
   }, []);
+
+  // Filter lab requests based on search query
+  useEffect(() => {
+    if (!requestSearchQuery.trim()) {
+      setFilteredLabRequests(labRequests);
+      return;
+    }
+
+    const query = requestSearchQuery.toLowerCase().trim();
+    const filtered = labRequests.filter(request => {
+      if (requestSearchFilter === 'name') {
+        return request.patientName.toLowerCase().includes(query);
+      } else if (requestSearchFilter === 'email') {
+        const email = request.patientEmail || '';
+        return email.toLowerCase().includes(query);
+      }
+      return false;
+    });
+    setFilteredLabRequests(filtered);
+  }, [requestSearchQuery, requestSearchFilter, labRequests]);
+
+  // Filter lab results based on search query
+  useEffect(() => {
+    if (!resultSearchQuery.trim()) {
+      setFilteredLabResults(labResults);
+      return;
+    }
+
+    const query = resultSearchQuery.toLowerCase().trim();
+    const filtered = labResults.filter(result => {
+      if (resultSearchFilter === 'name') {
+        return result.patientName.toLowerCase().includes(query);
+      } else if (resultSearchFilter === 'email') {
+        const email = result.patientEmail || '';
+        return email.toLowerCase().includes(query);
+      }
+      return false;
+    });
+    setFilteredLabResults(filtered);
+  }, [resultSearchQuery, resultSearchFilter, labResults]);
 
   // Function to refresh lab requests
   const refreshLabRequests = async () => {
@@ -215,55 +266,91 @@ const LabRequest: React.FC = () => {
         <Card>
           <CardHeader>
             <h3 className="text-lg font-medium text-gray-900">Lab Requests</h3>
+            {/* Search Section for Requests */}
+            <div className="mt-4 space-y-4">
+              <Input
+                placeholder={`Search requests by patient ${requestSearchFilter}...`}
+                value={requestSearchQuery}
+                onChange={(e) => setRequestSearchQuery(e.target.value)}
+                className="w-full"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setRequestSearchFilter('name')}
+                  className={`px-3 py-1 text-sm ${
+                    requestSearchFilter === 'name'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Search by Name
+                </Button>
+                <Button
+                  onClick={() => setRequestSearchFilter('email')}
+                  className={`px-3 py-1 text-sm ${
+                    requestSearchFilter === 'email'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Search by Email
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardBody className="px-0 py-0">
             <div className="divide-y divide-gray-200">
-              {labRequests.map((request) => (
-                <div key={request.id} className="p-4 flex items-start justify-between">
-                  <div className="flex items-start">
-                    <div className="mr-4 flex-shrink-0">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <FileText className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center">
-                        <h4 className="font-medium text-gray-900">{request.patientName}</h4>
-                        <span className="ml-2 text-sm text-gray-500">
-                          {format(new Date(request.requestedAt), 'MMM dd, yyyy')}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        Tests: {request.tests.map(t => t.testName).join(', ')}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                          request.status === 'requested' 
-                            ? 'bg-yellow-100 text-yellow-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {request.status}
-                        </span>
-                        {request.priority && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            {request.priority}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedRequest(request)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Details
-                  </Button>
+              {filteredLabRequests.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  {requestSearchQuery
+                    ? 'No requests found matching your search'
+                    : 'No lab requests'}
                 </div>
-              ))}
-              {labRequests.length === 0 && (
-                <div className="p-4 text-center text-gray-500">No lab requests</div>
+              ) : (
+                filteredLabRequests.map((request) => (
+                  <div key={request.id} className="p-4 flex items-start justify-between">
+                    <div className="flex items-start">
+                      <div className="mr-4 flex-shrink-0">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center">
+                          <h4 className="font-medium text-gray-900">{request.patientName}</h4>
+                          <span className="ml-2 text-sm text-gray-500">
+                            {format(new Date(request.requestedAt), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          Tests: {request.tests.map(t => t.testName).join(', ')}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                            request.status === 'requested' 
+                              ? 'bg-yellow-100 text-yellow-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                          {request.priority && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              {request.priority}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedRequest(request)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Details
+                    </Button>
+                  </div>
+                ))
               )}
             </div>
           </CardBody>
@@ -273,44 +360,80 @@ const LabRequest: React.FC = () => {
         <Card>
           <CardHeader>
             <h3 className="text-lg font-medium text-gray-900">Lab Results</h3>
+            {/* Search Section for Results */}
+            <div className="mt-4 space-y-4">
+              <Input
+                placeholder={`Search results by patient ${resultSearchFilter}...`}
+                value={resultSearchQuery}
+                onChange={(e) => setResultSearchQuery(e.target.value)}
+                className="w-full"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setResultSearchFilter('name')}
+                  className={`px-3 py-1 text-sm ${
+                    resultSearchFilter === 'name'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Search by Name
+                </Button>
+                <Button
+                  onClick={() => setResultSearchFilter('email')}
+                  className={`px-3 py-1 text-sm ${
+                    resultSearchFilter === 'email'
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  Search by Email
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardBody className="px-0 py-0">
             <div className="divide-y divide-gray-200">
-              {labResults.map((result) => (
-                <div key={result.id} className="p-4 flex items-start justify-between">
-                  <div className="flex items-start">
-                    <div className="mr-4 flex-shrink-0">
-                      <div className="p-2 bg-accent/10 rounded-full">
-                        <Activity className="h-5 w-5 text-accent" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center">
-                        <h4 className="font-medium text-gray-900">{result.patientName}</h4>
-                        <span className="ml-2 text-sm text-gray-500">
-                          {format(new Date(result.createdAt), 'MMM dd, yyyy')}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Tests: {Object.keys(result.result).join(', ')}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Lab Technician: {result.labTechnicianName}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedResult(result)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Details
-                  </Button>
+              {filteredLabResults.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  {resultSearchQuery
+                    ? 'No results found matching your search'
+                    : 'No lab results available'}
                 </div>
-              ))}
-              {labResults.length === 0 && (
-                <div className="p-4 text-center text-gray-500">No lab results available</div>
+              ) : (
+                filteredLabResults.map((result) => (
+                  <div key={result.id} className="p-4 flex items-start justify-between">
+                    <div className="flex items-start">
+                      <div className="mr-4 flex-shrink-0">
+                        <div className="p-2 bg-accent/10 rounded-full">
+                          <Activity className="h-5 w-5 text-accent" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center">
+                          <h4 className="font-medium text-gray-900">{result.patientName}</h4>
+                          <span className="ml-2 text-sm text-gray-500">
+                            {format(new Date(result.createdAt), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-600">
+                          Tests: {Object.keys(result.result).join(', ')}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Lab Technician: {result.labTechnicianName}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedResult(result)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Details
+                    </Button>
+                  </div>
+                ))
               )}
             </div>
           </CardBody>

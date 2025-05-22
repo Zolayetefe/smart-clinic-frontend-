@@ -18,6 +18,7 @@ import Analytics from '../pages/dashboard/admin/Analytics';
 import NurseDashboard from '../pages/dashboard/nurse/NurseDashboard';
 import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistDashboard';
 import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
+import LabTechnician from '../pages/dashboard/labTechnician/LabTechnician';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -212,6 +213,15 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['finance']}>
               <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* Lab Technician routes */}
+        <Route
+          path="/lab_technician"
+          element={
+            <ProtectedRoute allowedRoles={['lab_technician']}>
+              <LabTechnician />
             </ProtectedRoute>
           }
         />
