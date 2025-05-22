@@ -10,24 +10,11 @@ import axios from 'axios';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const { login, loading, user } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-
-  const demoCredentials = [
-    { role: 'Admin', email: 'admin@smartclinic.com' },
-    { role: 'Doctor', email: 'doctor@smartclinic.com' },
-    { role: 'Patient', email: 'patient@smartclinic.com' },
-    { role: 'Nurse', email: 'nurse@smartclinic.com' },
-    { role: 'Pharmasist', email: 'pharmasist@smartclinic.com' },
-    { role: 'Receiption', email: 'receiption@smartclinic.com' },
-    { role: 'Finance', email: 'finance@smartclinic.com' },
-    { role: 'Lab', email: 'lab@smartclinic.com' },
-  ];
-
   // Add useEffect for debugging
   useEffect(() => {
     console.log('Current user state:', user);
@@ -181,46 +168,6 @@ const Login: React.FC = () => {
           {loading ? 'Logging in...' : 'Sign in'}
         </Button>
       </form>
-
-      <div className="mt-6">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or sign in with demo account</span>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-4">
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-            Select Role
-          </label>
-          <select
-            id="role"
-            name="role"
-            value={selectedRole}
-            onChange={(e) => {
-              const role = e.target.value;
-              setSelectedRole(role);
-              const selectedCred = demoCredentials.find((cred) => cred.role === role);
-              if (selectedCred) {
-                setEmail(selectedCred.email);
-                setPassword('password');
-              }
-            }}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-          >
-            <option value="">-- Select Role --</option>
-            {demoCredentials.map((cred) => (
-              <option key={cred.role} value={cred.role}>
-                {cred.role}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
           Don't have an account?{' '}
