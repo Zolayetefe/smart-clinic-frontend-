@@ -6,19 +6,9 @@ import Card from '../../../components/ui/Card';
 import { format } from 'date-fns';
 
 interface Test {
-  name: string;
+  testName: string;
+  reason: string;
   price?: number;
-}
-
-interface LabTestBill {
-  id: string;
-  patientId: string;
-  labRequestId: string;
-  financeStaffId: string;
-  tests: Test[];
-  totalAmount: number;
-  approvalStatus: 'approved' | 'pending';
-  paidAt: string;
 }
 
 interface LabRequest {
@@ -30,20 +20,19 @@ interface LabRequest {
   doctorEmail: string;
   patientEmail: string;
   patientPhone: string;
-  labTestBillId?: string;
   tests: Test[];
   apporovalStatus: 'pending' | 'approved';
-  labTestBill: LabTestBill | null;
   totalAmount?: number;
-  paidAt?: string;
-  approvalStatus?: 'approved';
 }
+
+type TabType = 'all' | 'pending' | 'approved';
 
 const LabRequestApproval: React.FC = () => {
   const [labRequests, setLabRequests] = useState<LabRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [testPrices, setTestPrices] = useState<Record<string, Record<string, number>>>({});
+  const [activeTab, setActiveTab] = useState<TabType>('all');
 
   useEffect(() => {
     fetchLabRequests();
@@ -62,8 +51,8 @@ const LabRequestApproval: React.FC = () => {
       response.data.data.forEach((request: LabRequest) => {
         if (request.apporovalStatus === 'pending') {
           prices[request.id] = {};
-          request.tests?.forEach(test => {
-            prices[request.id][test.name] = test.price || 0;
+          request.tests.forEach(test => {
+            prices[request.id][test.testName] = 0;
           });
         }
       });
@@ -93,8 +82,9 @@ const LabRequestApproval: React.FC = () => {
   const handleApprovePayment = async (request: LabRequest) => {
     try {
       const testPricesList = request.tests.map(test => ({
-        name: test.name,
-        price: testPrices[request.id][test.name] || 0
+        testName: test.testName,
+        reason: test.reason,
+        price: testPrices[request.id][test.testName] || 0
       }));
 
       const totalAmount = calculateTotalAmount(request.id);
@@ -121,6 +111,28 @@ const LabRequestApproval: React.FC = () => {
     }
   };
 
+  const filteredRequests = labRequests.filter(request => {
+    if (activeTab === 'all') return true;
+    return request.apporovalStatus === activeTab;
+  });
+
+  const TabButton: React.FC<{
+    tab: TabType;
+    label: string;
+    count: number;
+  }> = ({ tab, label, count }) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${
+        activeTab === tab
+          ? 'bg-blue-500 text-white'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+      }`}
+    >
+      {label} ({count})
+    </button>
+  );
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -133,12 +145,22 @@ const LabRequestApproval: React.FC = () => {
     );
   }
 
+  const pendingCount = labRequests.filter(r => r.apporovalStatus === 'pending').length;
+  const approvedCount = labRequests.filter(r => r.apporovalStatus === 'approved').length;
+
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold mb-6">Lab Request Approvals</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Lab Request Approvals</h1>
+        <div className="flex gap-3">
+          <TabButton tab="all" label="All" count={labRequests.length} />
+          <TabButton tab="pending" label="Pending" count={pendingCount} />
+          <TabButton tab="approved" label="Approved" count={approvedCount} />
+        </div>
+      </div>
       
       <div className="space-y-6">
-        {labRequests.map((request) => (
+        {filteredRequests.map((request) => (
           <Card key={request.id} className="p-6">
             <div className="space-y-4">
               <div className="flex justify-between items-start">
@@ -156,18 +178,19 @@ const LabRequestApproval: React.FC = () => {
               <div>
                 <h4 className="font-medium mb-2">Tests</h4>
                 <div className="space-y-3">
-                  {request.tests?.map((test, index) => (
+                  {request.tests.map((test, index) => (
                     <div key={index} className="flex items-center gap-4 bg-gray-50 p-3 rounded">
                       <div className="flex-1">
-                        <p className="font-medium">{test.name}</p>
+                        <p className="font-medium">{test.testName}</p>
+                        <p className="text-sm text-gray-600">Reason: {test.reason}</p>
                       </div>
                       {request.apporovalStatus === 'pending' ? (
                         <div className="w-32">
                           <Input
                             type="number"
                             placeholder="Price"
-                            value={testPrices[request.id]?.[test.name] || ''}
-                            onChange={(e) => handlePriceChange(request.id, test.name, e.target.value)}
+                            value={testPrices[request.id]?.[test.testName] || ''}
+                            onChange={(e) => handlePriceChange(request.id, test.testName, e.target.value)}
                           />
                         </div>
                       ) : (
@@ -194,11 +217,8 @@ const LabRequestApproval: React.FC = () => {
                 ) : (
                   <div className="text-right">
                     <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                      Approved
+                      Payment Verified
                     </span>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Paid at: {format(new Date(request.paidAt!), 'MMM dd, yyyy HH:mm')}
-                    </p>
                   </div>
                 )}
               </div>
@@ -206,9 +226,9 @@ const LabRequestApproval: React.FC = () => {
           </Card>
         ))}
 
-        {labRequests.length === 0 && (
+        {filteredRequests.length === 0 && (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">No lab requests found</p>
+            <p className="text-gray-500">No {activeTab === 'all' ? '' : activeTab} lab requests found</p>
           </div>
         )}
       </div>
