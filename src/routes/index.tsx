@@ -20,6 +20,7 @@ import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistD
 import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
 import LabTechnician from '../pages/dashboard/labTechnician/LabTechnician';
 import LabResultPage from '../pages/dashboard/labTechnician/LabResultPage';
+import LabRequestApproval from '../pages/dashboard/financeStaff/LabRequestApproval';
 const AppRoutes = () => {
   const { user } = useAuth();
 
@@ -213,6 +214,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['finance']}>
               <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/lab-request-approval"
+          element={
+            <ProtectedRoute allowedRoles={['finance']}>
+              <LabRequestApproval />
             </ProtectedRoute>
           }
         />
