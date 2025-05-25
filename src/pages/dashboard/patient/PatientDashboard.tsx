@@ -309,35 +309,6 @@ const PatientDashboard: React.FC = () => {
       </Card>
       
       {/* Reminders */}
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-medium text-gray-900">Reminders</h3>
-        </CardHeader>
-        <CardBody className="px-0 py-0">
-          <div className="divide-y divide-gray-200">
-            {reminders.map((reminder) => (
-              <div key={reminder.id} className="p-4 flex items-start">
-                <div className="mr-4 flex-shrink-0">
-                  <div className="p-2 bg-accent/10 rounded-full">
-                    <Bell className="h-5 w-5 text-accent" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
-                      {reminder.type}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {new Date(reminder.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-700">{reminder.message}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
     </div>
   );
 };
