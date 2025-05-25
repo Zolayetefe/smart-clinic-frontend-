@@ -89,6 +89,7 @@ const DashboardLayout: React.FC = () => {
       links = [
         { name: 'Dashboard', href: '/finance', icon: <Home className="h-5 w-5" /> },
           { name: 'Lab Request Approval', href: '/finance/lab-request-approval', icon: <FileText className="h-5 w-5" /> },
+          { name: 'Prescription Approval', href: '/finance/prescription-approval', icon: <FileText className="h-5 w-5" /> },
       ];
       break;
     default:

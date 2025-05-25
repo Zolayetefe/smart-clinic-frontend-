@@ -22,8 +22,10 @@ import LabRequestApproval from '../pages/dashboard/financeStaff/LabRequestApprov
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import MedicalRecords from '../pages/dashboard/patient/ MedicalRecordss';
 import Profile from '../pages/Profile';
-import { useAuth } from '../contexts/AuthContext';
+import PrescriptionApproval from '../pages/dashboard/financeStaff/PrescriptionApproval';
 
+import { useAuth } from '../contexts/AuthContext';
+ 
 const AppRoutes = () => {
   const { user } = useAuth();
 
@@ -132,6 +134,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        {/* finance staff routes */}
         <Route
           path="/finance"
           element={
@@ -145,6 +148,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['finance']}>
               <LabRequestApproval />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/prescription-approval"
+          element={
+            <ProtectedRoute allowedRoles={['finance']}>
+              <PrescriptionApproval />
             </ProtectedRoute>
           }
         />
