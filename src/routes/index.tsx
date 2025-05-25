@@ -18,9 +18,7 @@ import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistD
 import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
 import LabTechnician from '../pages/dashboard/labTechnician/LabTechnician';
 import LabResultPage from '../pages/dashboard/labTechnician/LabResultPage';
-import Profile from '../pages/Profile';
-import { useAuth } from '../contexts/AuthContext';
-import MedicalRecords from '../pages/dashboard/patient/ MedicalRecordss';
+import LabRequestApproval from '../pages/dashboard/financeStaff/LabRequestApproval';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -67,27 +65,108 @@ const AppRoutes = () => {
         <Route path="/doctor/prescriptions" element={<Prescriptions />} />
         <Route path="/doctor/lab-requests" element={<LabRequests />} />
 
-        {/* Patient */}
-        <Route path="/patient" element={<PatientDashboard />} />
-        <Route path="/patient/appointments" element={<PatientAppointments />} />
-        <Route path="/patient/records" element={<MedicalRecords />} />
-        <Route path="/patient/book-appointment" element={<BookAppointment />} />
+        {/* Patient routes */}
+        <Route
+          path="/patient"
+          element={
+            <ProtectedRoute allowedRoles={['patient']}>
+              <PatientDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/appointments"
+          element={
+            <ProtectedRoute allowedRoles={['patient']}>
+              <PatientAppointments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/records"
+          element={
+            <ProtectedRoute allowedRoles={['patient']}>
+              <MedicalRecords />
+              
+              
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient/book-appointment"
+          element={
+            <ProtectedRoute allowedRoles={['patient','receptionist']}>
+              <BookAppointment />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Nurse */}
-        <Route path="/nurse" element={<NurseDashboard />} />
+        {/* Nurse routes */}
+        <Route
+          path="/nurse"
+          element={
+            <ProtectedRoute allowedRoles={['nurse']}>
+              <NurseDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Receptionist */}
-        <Route path="/receptionist" element={<ReceptionistDashboard />} />
-
-        {/* Finance */}
-        <Route path="/finance" element={<FinanceDashboard />} />
-
-        {/* Lab Technician */}
-        <Route path="/lab_technician" element={<LabTechnician />} />
-        <Route path="/lab_technician/results" element={<LabResultPage />} />
-
-        {/* ✅ Profile */}
-        <Route path="/profile" element={<Profile />} />
+        {/* Receptionist routes */}
+        <Route
+          path="/receptionist"
+          element={
+            <ProtectedRoute allowedRoles={['receptionist']}>
+              <ReceptionistDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/receptionist/book-appointment/:patientId"
+          element={
+            <ProtectedRoute allowedRoles={['receptionist']}>
+              <BookAppointment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance"
+          element={
+            <ProtectedRoute allowedRoles={['finance']}>
+              <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/lab-request-approval"
+          element={
+            <ProtectedRoute allowedRoles={['finance']}>
+              <LabRequestApproval />
+            </ProtectedRoute>
+          }
+        />
+        {/* Lab Technician routes */}
+        <Route
+          path="/lab_technician"
+          element={
+            <ProtectedRoute allowedRoles={['lab_technician']}>
+              <LabTechnician />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lab_technician/results"
+          element={
+            <ProtectedRoute allowedRoles={['lab_technician']}>
+              <LabResultPage />
+            </ProtectedRoute> 
+          }
+        />
+        
+        {/* Update the catch-all route to use role-based redirect */}
+        <Route 
+          path="*" 
+          element={<Navigate to={user ? getDefaultRoute(user.role) : '/login'} replace />} 
+        />
       </Route>
 
       {/* Redirect unknown routes */}

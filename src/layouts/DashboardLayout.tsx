@@ -88,6 +88,7 @@ const DashboardLayout: React.FC = () => {
     case 'finance':
       links = [
         { name: 'Dashboard', href: '/finance', icon: <Home className="h-5 w-5" /> },
+          { name: 'Lab Request Approval', href: '/finance/lab-request-approval', icon: <FileText className="h-5 w-5" /> },
       ];
       break;
     default:

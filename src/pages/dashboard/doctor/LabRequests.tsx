@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import axios from 'axios';
 import { format } from 'date-fns';
+import LabResultSidebar from './LabResultSidebar';
 
 // Types for Lab Requests and Results
 interface LabTest {
@@ -53,6 +54,24 @@ interface LabResult {
   result: Record<string, string>;
   notes: string;
   createdAt: string;
+  prescriptionId: string | null;
+}
+
+interface Medication {
+  medicineName: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+  quantity: number;
+}
+
+interface Prescription {
+  patientId: string;
+  labResultId: string;
+  medications: Medication[];
+  approvalStatus: 'pending' | 'approved';
+  notes: string;
 }
 
 const LabRequest: React.FC = () => {
@@ -71,6 +90,24 @@ const LabRequest: React.FC = () => {
   const [requestSearchFilter, setRequestSearchFilter] = useState<'name' | 'email'>('name');
   const [resultSearchQuery, setResultSearchQuery] = useState('');
   const [resultSearchFilter, setResultSearchFilter] = useState<'name' | 'email'>('name');
+
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [prescriptionData, setPrescriptionData] = useState<Prescription>({
+    patientId: '',
+    labResultId: '',
+    medications: [
+      {
+        medicineName: '',
+        dosage: '',
+        frequency: '',
+        duration: '',
+        instructions: '',
+        quantity: 1
+      }
+    ],
+    approvalStatus: 'pending',
+    notes: ''
+  });
 
   // Separate functions for API calls
   const fetchLabRequests = async () => {
@@ -211,6 +248,71 @@ const LabRequest: React.FC = () => {
     }
   };
 
+  const handleAddMedication = () => {
+    setPrescriptionData(prev => ({
+      ...prev,
+      medications: [
+        ...prev.medications,
+        {
+          medicineName: '',
+          dosage: '',
+          frequency: '',
+          duration: '',
+          instructions: '',
+          quantity: 1
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveMedication = (index: number) => {
+    setPrescriptionData(prev => ({
+      ...prev,
+      medications: prev.medications.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleMedicationChange = (index: number, field: keyof Medication, value: string | number) => {
+    setPrescriptionData(prev => ({
+      ...prev,
+      medications: prev.medications.map((med, i) => 
+        i === index ? { ...med, [field]: value } : med
+      )
+    }));
+  };
+
+  const handleSubmitPrescription = async () => {
+    try {
+      await axios.post('http://localhost:5000/api/doctor/prescription', prescriptionData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      setShowPrescriptionModal(false);
+      // Reset prescription data
+      setPrescriptionData({
+        patientId: '',
+        labResultId: '',
+        medications: [
+          {
+            medicineName: '',
+            dosage: '',
+            frequency: '',
+            duration: '',
+            instructions: '',
+            quantity: 1
+          }
+        ],
+        approvalStatus: 'pending',
+        notes: ''
+      });
+    } catch (error) {
+      console.error('Error submitting prescription:', error);
+      setError('Failed to submit prescription');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -245,199 +347,131 @@ const LabRequest: React.FC = () => {
             <h2 className="text-2xl font-bold text-white">Lab Requests & Results</h2>
             <p className="mt-1 text-white/80">Manage lab requests and results for your patients</p>
           </div>
-          <div className="mt-4 md:mt-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Handle new lab request button click
-                // You can implement the form modal here
-              }}
-              className="bg-white text-secondary hover:bg-gray-50"
-            >
-              New Lab Request
-            </Button>
-          </div>
         </div>
       </div>
 
-      {/* Lab Request and Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Lab Requests Card */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-medium text-gray-900">Lab Requests</h3>
-            {/* Search Section for Requests */}
-            <div className="mt-4 space-y-4">
-              <Input
-                placeholder={`Search requests by patient ${requestSearchFilter}...`}
-                value={requestSearchQuery}
-                onChange={(e) => setRequestSearchQuery(e.target.value)}
-                className="w-full"
-              />
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setRequestSearchFilter('name')}
-                  className={`px-3 py-1 text-sm ${
-                    requestSearchFilter === 'name'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  Search by Name
-                </Button>
-                <Button
-                  onClick={() => setRequestSearchFilter('email')}
-                  className={`px-3 py-1 text-sm ${
-                    requestSearchFilter === 'email'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  Search by Email
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardBody className="px-0 py-0">
-            <div className="divide-y divide-gray-200">
-              {filteredLabRequests.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  {requestSearchQuery
-                    ? 'No requests found matching your search'
-                    : 'No lab requests'}
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Lab Requests Section */}
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-medium text-gray-900">Lab Requests</h3>
+              {/* Search Section */}
+              <div className="mt-4 space-y-4">
+                <Input
+                  placeholder={`Search requests by patient ${requestSearchFilter}...`}
+                  value={requestSearchQuery}
+                  onChange={(e) => setRequestSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setRequestSearchFilter('name')}
+                    className={`px-3 py-1 text-sm ${
+                      requestSearchFilter === 'name'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    Search by Name
+                  </Button>
+                  <Button
+                    onClick={() => setRequestSearchFilter('email')}
+                    className={`px-3 py-1 text-sm ${
+                      requestSearchFilter === 'email'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    Search by Email
+                  </Button>
                 </div>
-              ) : (
-                filteredLabRequests.map((request) => (
-                  <div key={request.id} className="p-4 flex items-start justify-between">
-                    <div className="flex items-start">
-                      <div className="mr-4 flex-shrink-0">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                          <FileText className="h-5 w-5 text-primary" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center">
-                          <h4 className="font-medium text-gray-900">{request.patientName}</h4>
-                          <span className="ml-2 text-sm text-gray-500">
-                            {format(new Date(request.requestedAt), 'MMM dd, yyyy')}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          Tests: {request.tests.map(t => t.testName).join(', ')}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                            request.status === 'requested' 
-                              ? 'bg-yellow-100 text-yellow-800' 
+              </div>
+            </CardHeader>
+            <CardBody>
+              {/* Existing lab requests table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Patient
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tests
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredLabRequests.map((request) => (
+                      <tr key={request.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {request.patientName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {request.patientEmail}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {request.tests.map(t => t.testName).join(', ')}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            request.status === 'requested'
+                              ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-green-100 text-green-800'
                           }`}>
                             {request.status}
                           </span>
-                          {request.priority && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {request.priority}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedRequest(request)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Details
-                    </Button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {format(new Date(request.requestedAt), 'MMM dd, yyyy')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedRequest(request)}
+                          >
+                            View Details
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredLabRequests.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No lab requests found
                   </div>
-                ))
-              )}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Lab Results Card */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-medium text-gray-900">Lab Results</h3>
-            {/* Search Section for Results */}
-            <div className="mt-4 space-y-4">
-              <Input
-                placeholder={`Search results by patient ${resultSearchFilter}...`}
-                value={resultSearchQuery}
-                onChange={(e) => setResultSearchQuery(e.target.value)}
-                className="w-full"
-              />
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setResultSearchFilter('name')}
-                  className={`px-3 py-1 text-sm ${
-                    resultSearchFilter === 'name'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  Search by Name
-                </Button>
-                <Button
-                  onClick={() => setResultSearchFilter('email')}
-                  className={`px-3 py-1 text-sm ${
-                    resultSearchFilter === 'email'
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  Search by Email
-                </Button>
+                )}
               </div>
-            </div>
-          </CardHeader>
-          <CardBody className="px-0 py-0">
-            <div className="divide-y divide-gray-200">
-              {filteredLabResults.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  {resultSearchQuery
-                    ? 'No results found matching your search'
-                    : 'No lab results available'}
-                </div>
-              ) : (
-                filteredLabResults.map((result) => (
-                  <div key={result.id} className="p-4 flex items-start justify-between">
-                    <div className="flex items-start">
-                      <div className="mr-4 flex-shrink-0">
-                        <div className="p-2 bg-accent/10 rounded-full">
-                          <Activity className="h-5 w-5 text-accent" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center">
-                          <h4 className="font-medium text-gray-900">{result.patientName}</h4>
-                          <span className="ml-2 text-sm text-gray-500">
-                            {format(new Date(result.createdAt), 'MMM dd, yyyy')}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Tests: {Object.keys(result.result).join(', ')}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Lab Technician: {result.labTechnicianName}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedResult(result)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Details
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </div>
+
+        {/* Lab Results Sidebar */}
+        <div className="lg:col-span-1 h-[calc(100vh-13rem)]">
+          <LabResultSidebar
+            labResults={filteredLabResults}
+            onSelectResult={setSelectedResult}
+          />
+        </div>
       </div>
 
       {/* Lab Request Detail Modal */}
@@ -549,17 +583,145 @@ const LabRequest: React.FC = () => {
                   <p>{selectedResult.notes}</p>
                 </div>
               )}
-              <p className="text-sm text-gray-500">
-                Created: {format(new Date(selectedResult.createdAt), 'PPP')}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  Created: {format(new Date(selectedResult.createdAt), 'PPP')}
+                </p>
+                {selectedResult.prescriptionId && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Prescription Created
+                  </span>
+                )}
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setPrescriptionData({
+                      ...prescriptionData,
+                      patientId: selectedResult.patientId,
+                      labResultId: selectedResult.id
+                    });
+                    setShowPrescriptionModal(true);
+                  }}
+                  disabled={!!selectedResult.prescriptionId}
+                  className={selectedResult.prescriptionId ? 'opacity-50 cursor-not-allowed' : ''}
+                >
+                  {selectedResult.prescriptionId ? 'Prescription Added' : 'Write Prescription'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedResult(null)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
-            <div className="mt-6 flex justify-end">
+          </div>
+        </div>
+      )}
+
+      {/* Prescription Modal */}
+      {showPrescriptionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Write Prescription</h2>
+              <button
+                onClick={() => setShowPrescriptionModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {prescriptionData.medications.map((medication, index) => (
+                <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium">Medication #{index + 1}</h3>
+                    {index > 0 && (
+                      <button
+                        onClick={() => handleRemoveMedication(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Medicine Name"
+                      value={medication.medicineName}
+                      onChange={(e) => handleMedicationChange(index, 'medicineName', e.target.value)}
+                    />
+                    <Input
+                      label="Dosage"
+                      value={medication.dosage}
+                      onChange={(e) => handleMedicationChange(index, 'dosage', e.target.value)}
+                    />
+                    <Input
+                      label="Frequency"
+                      value={medication.frequency}
+                      onChange={(e) => handleMedicationChange(index, 'frequency', e.target.value)}
+                    />
+                    <Input
+                      label="Duration"
+                      value={medication.duration}
+                      onChange={(e) => handleMedicationChange(index, 'duration', e.target.value)}
+                    />
+                    <Input
+                      label="Quantity"
+                      type="number"
+                      value={medication.quantity}
+                      onChange={(e) => handleMedicationChange(index, 'quantity', parseInt(e.target.value))}
+                      min={1}
+                    />
+                    <Input
+                      label="Instructions"
+                      value={medication.instructions}
+                      onChange={(e) => handleMedicationChange(index, 'instructions', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+
               <Button
                 variant="outline"
-                onClick={() => setSelectedResult(null)}
+                onClick={handleAddMedication}
+                className="w-full"
               >
-                Close
+                Add Another Medication
               </Button>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={prescriptionData.notes}
+                  onChange={(e) => setPrescriptionData(prev => ({ ...prev, notes: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md"
+                  rows={4}
+                  placeholder="Additional notes or instructions..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPrescriptionModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSubmitPrescription}
+                >
+                  Submit Prescription
+                </Button>
+              </div>
             </div>
           </div>
         </div>
