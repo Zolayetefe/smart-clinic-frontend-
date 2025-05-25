@@ -25,6 +25,7 @@ import Profile from '../pages/Profile';
 import PrescriptionApproval from '../pages/dashboard/financeStaff/PrescriptionApproval';
 
 import { useAuth } from '../contexts/AuthContext';
+import PharmacistPage from '../pages/dashboard/pharmacist/PharmacistPage';
  
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -45,6 +46,8 @@ const AppRoutes = () => {
         return '/lab_technician';
       case 'finance':
         return '/finance';
+      case 'pharmacist':
+        return '/pharmacist';
       default:
         return '/';
     }
@@ -176,6 +179,16 @@ const AppRoutes = () => {
             </ProtectedRoute> 
           }
         />
+        {/* Pharmacist routes */}
+        <Route
+          path="/pharmacist"
+          element={
+            <ProtectedRoute allowedRoles={['pharmacist']}>
+              <PharmacistPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
   path="/profile"
   element={

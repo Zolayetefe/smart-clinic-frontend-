@@ -92,6 +92,11 @@ const DashboardLayout: React.FC = () => {
           { name: 'Prescription Approval', href: '/finance/prescription-approval', icon: <FileText className="h-5 w-5" /> },
       ];
       break;
+    case 'pharmacist':
+      links = [
+        { name: 'Dashboard', href: '/pharmacist', icon: <Home className="h-5 w-5" /> },
+      ];
+      break;
     default:
       links = [];
   }
