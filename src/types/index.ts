@@ -3,6 +3,7 @@ export interface UserType {
   id: string;
   name: string;
   email: string;
+  status : "active" | "suspend";
   role: string;
   phone?: string;
   department?: string;
