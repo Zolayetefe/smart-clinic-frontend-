@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Card, { CardHeader, CardBody } from '../../../components/ui/Card';
@@ -141,9 +141,8 @@ const Appointments = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="w-full space-y-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
         <Link to="/patient/book-appointment">
           <Button
             variant="primary"
