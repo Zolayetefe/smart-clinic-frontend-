@@ -19,6 +19,10 @@ import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
 import LabTechnician from '../pages/dashboard/labTechnician/LabTechnician';
 import LabResultPage from '../pages/dashboard/labTechnician/LabResultPage';
 import LabRequestApproval from '../pages/dashboard/financeStaff/LabRequestApproval';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
+import MedicalRecords from '../pages/dashboard/patient/ MedicalRecordss';
+import Profile from '../pages/Profile';
+import { useAuth } from '../contexts/AuthContext';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -161,6 +165,15 @@ const AppRoutes = () => {
             </ProtectedRoute> 
           }
         />
+        <Route
+  path="/profile"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'doctor', 'patient', 'nurse', 'lab_technician', 'pharmacist', 'receptionist', 'finance']}>
+      <Profile />
+    </ProtectedRoute>
+  }
+/>
+
         
         {/* Update the catch-all route to use role-based redirect */}
         <Route 
