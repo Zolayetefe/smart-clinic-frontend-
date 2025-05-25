@@ -668,7 +668,7 @@ const BookAppointment: React.FC = () => {
   };
   
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in">
+    <div className="w-full animate-fade-in">
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-between">

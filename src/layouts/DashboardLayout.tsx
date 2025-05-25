@@ -28,52 +28,78 @@ const DashboardLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const getNavLinks = () => {
-    if (!user) return [];
-    switch (user.role.toLowerCase()) {
-      case 'admin':
-        return [
-          { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
-          { name: 'Staff Management', href: '/admin/staff', icon: <Users className="h-5 w-5" /> },
-          { name: 'Analytics', href: '/admin/analytics', icon: <BarChart className="h-5 w-5" /> },
-        ];
-      case 'doctor':
-        return [
-          { name: 'Dashboard', href: '/doctor', icon: <Home className="h-5 w-5" /> },
-          {
-            name: 'Appointments', href: '/doctor/appointments', icon: <Calendar className="h-5 w-5" />, badge: unseenCount > 0 ? unseenCount : undefined
-          },
-          { name: 'Prescriptions', href: '/doctor/prescriptions', icon: <FileText className="h-5 w-5" /> },
-          { name: 'Lab Requests', href: '/doctor/lab-requests', icon: <FileText className="h-5 w-5" /> },
-        ];
-      case 'patient':
-        return [
-          { name: 'Dashboard', href: '/patient', icon: <Home className="h-5 w-5" /> },
-          { name: 'My Appointments', href: '/patient/appointments', icon: <Calendar className="h-5 w-5" /> },
-          { name: 'Medical Records', href: '/patient/records', icon: <FileText className="h-5 w-5" /> },
-          { name: 'Book Appointment', href: '/patient/book-appointment', icon: <UserPlus className="h-5 w-5" /> },
-        ];
-      case 'nurse':
-        return [
-          { name: 'Dashboard', href: '/nurse', icon: <Home className="h-5 w-5" /> },
-          { name: 'Patients', href: '/nurse/patients', icon: <Users className="h-5 w-5" /> },
-        ];
-      case 'lab_technician':
-        return [
-          { name: 'Dashboard', href: '/lab_technician', icon: <Home className="h-5 w-5" /> },
-          { name: 'Lab Results', href: '/lab_technician/results', icon: <FileText className="h-5 w-5" /> },
-        ];
-      case 'receptionist':
-        return [
-          { name: 'Dashboard', href: '/receptionist', icon: <Home className="h-5 w-5" /> },
-        ];
-      case 'finance':
-        return [
-          { name: 'Dashboard', href: '/finance', icon: <Home className="h-5 w-5" /> },
-        ];
-      default:
-        return [];
-    }
-  };
+  if (!user) return [];
+
+  interface NavLink {
+    name: string;
+    href: string;
+    icon: React.ReactNode;
+    badge?: number;
+  }
+
+  let links: NavLink[] = [];
+
+  switch (user.role.toLowerCase()) {
+    case 'admin':
+      links = [
+        { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
+        { name: 'Staff Management', href: '/admin/staff', icon: <Users className="h-5 w-5" /> },
+        { name: 'Analytics', href: '/admin/analytics', icon: <BarChart className="h-5 w-5" /> },
+      ];
+      break;
+    case 'doctor':
+      links = [
+        { name: 'Dashboard', href: '/doctor', icon: <Home className="h-5 w-5" /> },
+        {
+          name: 'Appointments',
+          href: '/doctor/appointments',
+          icon: <Calendar className="h-5 w-5" />,
+          badge: unseenCount > 0 ? unseenCount : undefined
+        },
+        { name: 'Prescriptions', href: '/doctor/prescriptions', icon: <FileText className="h-5 w-5" /> },
+        { name: 'Lab Requests', href: '/doctor/lab-requests', icon: <FileText className="h-5 w-5" /> },
+      ];
+      break;
+    case 'patient':
+      links = [
+        { name: 'Dashboard', href: '/patient', icon: <Home className="h-5 w-5" /> },
+        { name: 'My Appointments', href: '/patient/appointments', icon: <Calendar className="h-5 w-5" /> },
+        { name: 'Medical Records', href: '/patient/records', icon: <FileText className="h-5 w-5" /> },
+        { name: 'Book Appointment', href: '/patient/book-appointment', icon: <UserPlus className="h-5 w-5" /> },
+      ];
+      break;
+    case 'nurse':
+      links = [
+        { name: 'Dashboard', href: '/nurse', icon: <Home className="h-5 w-5" /> },
+        { name: 'Patients', href: '/nurse/patients', icon: <Users className="h-5 w-5" /> },
+      ];
+      break;
+    case 'lab_technician':
+      links = [
+        { name: 'Dashboard', href: '/lab_technician', icon: <Home className="h-5 w-5" /> },
+        { name: 'Lab Results', href: '/lab_technician/results', icon: <FileText className="h-5 w-5" /> },
+      ];
+      break;
+    case 'receptionist':
+      links = [
+        { name: 'Dashboard', href: '/receptionist', icon: <Home className="h-5 w-5" /> },
+      ];
+      break;
+    case 'finance':
+      links = [
+        { name: 'Dashboard', href: '/finance', icon: <Home className="h-5 w-5" /> },
+      ];
+      break;
+    default:
+      links = [];
+  }
+
+  // ✅ Add Profile link to all roles
+  links.push({ name: 'Profile', href: '/profile', icon: <Users className="h-5 w-5" /> });
+
+  return links;
+};
+
 
   const navLinks = getNavLinks();
 
