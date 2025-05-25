@@ -44,7 +44,6 @@ const DashboardLayout: React.FC = () => {
       links = [
         { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
         { name: 'Staff Management', href: '/admin/staff', icon: <Users className="h-5 w-5" /> },
-        { name: 'Analytics', href: '/admin/analytics', icon: <BarChart className="h-5 w-5" /> },
       ];
       break;
     case 'doctor':

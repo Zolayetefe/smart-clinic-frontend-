@@ -12,7 +12,6 @@ import PatientAppointments from '../pages/dashboard/patient/Appointments';
 import BookAppointment from '../pages/dashboard/patient/BookAppointment';
 import AdminDashboard from '../pages/dashboard/admin/AdminDashboard';
 import StaffManagement from '../pages/dashboard/admin/StaffManagement';
-import Analytics from '../pages/dashboard/admin/Analytics';
 import NurseDashboard from '../pages/dashboard/nurse/NurseDashboard';
 import ReceptionistDashboard from '../pages/dashboard/receptionist/ReceptionistDashboard';
 import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
@@ -66,7 +65,6 @@ const AppRoutes = () => {
         {/* Admin */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/staff" element={<StaffManagement />} />
-        <Route path="/admin/analytics" element={<Analytics />} />
 
         {/* Doctor */}
         <Route path="/doctor" element={<DoctorDashboard />} />
