@@ -1,18 +1,12 @@
+// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosError } from 'axios';
 import { UserType, AuthResponse } from '../types';
-// import { disconnectSocket } from '../utils/socket';
 
-// Define response types
 interface ApiResponse<T = any> {
   success: boolean;
   message: string;
   data?: T;
-}
-
-interface LoginError {
-  message: string;
-  status?: number;
 }
 
 interface AuthContextType {
@@ -22,29 +16,7 @@ interface AuthContextType {
   register: (data: any) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
-}
-
-// Add interface for register data
-interface RegisterData {
-  // Basic user info
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-  
-  // Personal information
-  fullName: string;
-  dateOfBirth: string;
-  gender: string;
-  phone: string;
-  
-  // Contact information
-  address: string;
-  emergencyContact: string;
-  
-  // Optional fields
-  department?: string;
-  specialization?: string;
+  setUser: React.Dispatch<React.SetStateAction<UserType | null>>; // added setUser
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,8 +31,7 @@ export const useAuth = () => {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Create axios instance with default config
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 10000,
@@ -73,7 +44,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Check if user is logged in on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -87,25 +57,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Auth check failed:', error);
         setUser(null);
       } finally {
-    setLoading(false);
+        setLoading(false);
       }
     };
 
     checkAuthStatus();
   }, []);
 
-  // Login function
   const login = async (email: string, password: string): Promise<UserType> => {
     setLoading(true);
     try {
-      console.log('Attempting login for:', email);
-      const response = await api.post<AuthResponse>('/auth/login', {
-        email,
-        password,
-      });
-      
-      console.log('Login response:', response.data);
-      
+      const response = await api.post<AuthResponse>('/auth/login', { email, password });
       if (response.data.user) {
         setUser(response.data.user);
         return response.data.user;
@@ -113,10 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('Login failed: No user data received');
       }
     } catch (error) {
-      console.error('Login error details:', error);
       if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<{ message: string }>;
-        throw new Error(axiosError.response?.data?.message || 'Login failed');
+        throw new Error(error.response?.data?.message || 'Login failed');
       }
       throw error;
     } finally {
@@ -124,12 +84,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Register function
   const register = async (data: any): Promise<void> => {
     setLoading(true);
     try {
       const response = await api.post<AuthResponse>('/auth/patient/register', data);
-      
       if (response.data.user) {
         setUser(response.data.user);
       } else {
@@ -137,8 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<{ message: string }>;
-        throw new Error(axiosError.response?.data?.message || 'Registration failed');
+        throw new Error(error.response?.data?.message || 'Registration failed');
       }
       throw error;
     } finally {
@@ -146,13 +103,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Logout function
   const logout = () => {
     setUser(null);
-    // disconnectSocket();
   };
 
-  // Add response interceptor for handling token expiration
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
       (response) => response,
@@ -176,6 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     logout,
     isAuthenticated: !!user,
+    setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
