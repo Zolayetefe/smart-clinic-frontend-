@@ -11,7 +11,7 @@ const AuthLayout: React.FC = () => {
             <Activity className="h-8 w-8 text-primary" />
           </div>
           <h2 className="text-3xl font-bold text-white">Smart Clinic</h2>
-          <p className="mt-2 text-white/80">Healthcare reimagined with AI</p>
+          <p className="mt-2 text-white/80">Healthcare </p>
         </div>
         
         <div className="mt-8 bg-white py-8 px-4 shadow-xl rounded-xl sm:px-10 animate-fade-in">

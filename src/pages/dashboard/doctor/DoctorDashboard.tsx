@@ -15,34 +15,7 @@ const DoctorDashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const { unseenCount, incrementUnseenCount } = useAppointments();
-  
-  // Mock data for today's appointments
-  const todayAppointments = [
-    { 
-      id: '1', 
-      patientName: 'John Doe', 
-      patientAge: 45,
-      time: '10:00 AM', 
-      reason: 'Follow-up consultation',
-      status: 'checked-in'
-    },
-    { 
-      id: '2', 
-      patientName: 'Jane Smith', 
-      patientAge: 32,
-      time: '11:30 AM', 
-      reason: 'Routine checkup',
-      status: 'scheduled'
-    },
-    { 
-      id: '3', 
-      patientName: 'Michael Brown', 
-      patientAge: 58,
-      time: '2:00 PM', 
-      reason: 'Blood pressure monitoring',
-      status: 'scheduled'
-    }
-  ];
+
   
   // Mock data for pending actions
   const pendingActions = [
@@ -288,78 +261,7 @@ const DoctorDashboard: React.FC = () => {
         </CardBody>
       </Card>
       
-      {/* Pending Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-medium text-gray-900">Pending Actions</h3>
-          </CardHeader>
-          <CardBody className="px-0 py-0">
-            <div className="divide-y divide-gray-200">
-              {pendingActions.map((action) => (
-                <div key={action.id} className="p-4 flex items-start">
-                  <div className="mr-4 flex-shrink-0">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      {action.type === 'Lab Results' ? (
-                        <Activity className="h-5 w-5 text-primary" />
-                      ) : (
-                        <FileText className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
-                        {action.type}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(action.date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-700">{action.description}</p>
-                    <p className="text-sm text-gray-500">Patient: {action.patient}</p>
-                  </div>
-                </div>
-              ))}
-              
-              {pendingActions.length === 0 && (
-                <div className="p-4 text-center text-gray-500">No pending actions</div>
-              )}
-            </div>
-          </CardBody>
-        </Card>
-        
-        {/* AI Patient Insights */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center">
-              <h3 className="text-lg font-medium text-gray-900">AI Patient Insights</h3>
-              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-accent/10 text-accent">AI Generated</span>
-            </div>
-          </CardHeader>
-          <CardBody className="px-0 py-0">
-            <div className="divide-y divide-gray-200">
-              {patientInsights.map((insight) => (
-                <div key={insight.id} className="p-4 flex items-start">
-                  <div className="mr-4 flex-shrink-0">
-                    <div className="p-2 bg-accent/10 rounded-full">
-                      <Stethoscope className="h-5 w-5 text-accent" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{insight.patient}</p>
-                    <p className="mt-1 text-sm text-gray-600">{insight.insight}</p>
-                  </div>
-                </div>
-              ))}
-              
-              {patientInsights.length === 0 && (
-                <div className="p-4 text-center text-gray-500">No insights available</div>
-              )}
-            </div>
-          </CardBody>
-        </Card>
-      </div>
+    
     </div>
   );
 };

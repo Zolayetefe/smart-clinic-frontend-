@@ -64,7 +64,7 @@ const Stats: React.FC<StatsProps> = ({ appointments }) => {
           <div>
             <p className="text-sm font-medium text-gray-500">Total Revenue</p>
             <p className="text-2xl font-semibold text-primary">
-              ${stats.totalAmount.toFixed(2)}
+              {stats.totalAmount.toFixed(2)} ETB
             </p>
           </div>
           <div className="bg-primary/10 p-3 rounded-full">

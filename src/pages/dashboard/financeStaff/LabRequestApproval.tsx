@@ -195,7 +195,7 @@ const LabRequestApproval: React.FC = () => {
                         </div>
                       ) : (
                         <div className="text-green-600 font-medium">
-                          ${test.price}
+                          {test.price} ETB
                         </div>
                       )}
                     </div>
@@ -205,7 +205,7 @@ const LabRequestApproval: React.FC = () => {
 
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="text-lg font-semibold">
-                  Total Amount: ${request.apporovalStatus === 'approved' ? request.totalAmount : calculateTotalAmount(request.id)}
+                  Total Amount: {request.apporovalStatus === 'approved' ? request.totalAmount : calculateTotalAmount(request.id)} ETB
                 </div>
                 {request.apporovalStatus === 'pending' ? (
                   <Button

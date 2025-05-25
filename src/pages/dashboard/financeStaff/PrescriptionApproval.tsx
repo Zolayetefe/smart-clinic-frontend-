@@ -185,12 +185,12 @@ const PrescriptionApproval = () => {
                                   className="w-24"
                                 />
                                 <span className="text-sm text-gray-500">
-                                  Total: ${((medicationPrices[prescription.id]?.[index] || 0) * medication.quantity).toFixed(2)}
+                                  Total: {((medicationPrices[prescription.id]?.[index] || 0) * medication.quantity).toFixed(2)} ETB
                                 </span>
                               </div>
                             ) : (
                               <div className="text-sm text-gray-700">
-                                Price: ${medication.price} | Total: ${(medication.price || 0) * medication.quantity}
+                                Price: {medication.price} ETB | Total: {(medication.price || 0) * medication.quantity} ETB
                               </div>
                             )}
                           </div>
@@ -200,7 +200,7 @@ const PrescriptionApproval = () => {
                       {prescription.approvalStatus === 'pending' && (
                         <div className="mt-4 flex items-center justify-between">
                           <p className="text-lg font-medium">
-                            Total Amount: ${calculateTotalAmount(prescription.id, prescription.medications).toFixed(2)}
+                            Total Amount: {calculateTotalAmount(prescription.id, prescription.medications).toFixed(2)} ETB
                           </p>
                           <Button
                             onClick={() => handleApprovePayment(prescription)}
@@ -214,7 +214,7 @@ const PrescriptionApproval = () => {
                       {prescription.approvalStatus === 'approved' && prescription.totalAmount && (
                         <div className="mt-4">
                           <p className="text-lg font-medium text-green-700">
-                            Total Amount Approved: ${prescription.totalAmount.toFixed(2)}
+                            Total Amount Approved: {prescription.totalAmount.toFixed(2)} ETB
                           </p>
                         </div>
                       )}

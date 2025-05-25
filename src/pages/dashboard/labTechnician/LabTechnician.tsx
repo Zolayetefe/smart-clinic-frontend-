@@ -339,7 +339,7 @@ const LabTechnician: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <span className="font-medium text-green-600">
-                              ${test.price || 0}
+                              {test.price || 0} ETB
                             </span>
                           </div>
                         </div>
@@ -348,7 +348,7 @@ const LabTechnician: React.FC = () => {
                   </div>
                   <div className="mt-3 text-right">
                     <p className="font-semibold">
-                      Total Amount: ${selectedRequest.tests.reduce((sum, test) => sum + (test.price || 0), 0)}
+                      Total Amount: {selectedRequest.tests.reduce((sum, test) => sum + (test.price || 0), 0)} ETB
                     </p>
                   </div>
                 </div>
@@ -396,7 +396,7 @@ const LabTechnician: React.FC = () => {
                     <p className="font-medium">{test.testName}</p>
                           <p className="text-sm text-gray-600">Reason: {test.reason}</p>
                         </div>
-                        <span className="text-green-600 font-medium">${test.price || 0}</span>
+                        <span className="text-green-600 font-medium">{test.price || 0} ETB</span>
                       </div>
                     <Input
                       label="Result"

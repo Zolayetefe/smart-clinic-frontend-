@@ -231,7 +231,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({ appointments, onApp
                             <div className="flex items-center text-green-600">
                               <DollarSign className="h-4 w-4 mr-2" />
                               <span className="text-sm font-medium">
-                                Amount Paid: ${appointment.amount}
+                                Amount Paid: {appointment.amount} ETB
                               </span>
                             </div>
                           )}

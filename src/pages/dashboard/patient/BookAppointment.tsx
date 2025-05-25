@@ -569,7 +569,7 @@ const BookAppointment: React.FC = () => {
                 isLoading={isAiRecommending}
                 className="ml-4"
               >
-                Get AI recommendation
+                Get recommendation
               </Button>
             )}
           </div>
