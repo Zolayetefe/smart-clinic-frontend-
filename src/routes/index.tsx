@@ -21,6 +21,7 @@ import FinanceDashboard from '../pages/dashboard/financeStaff/FinanceDashboard';
 import LabTechnician from '../pages/dashboard/labTechnician/LabTechnician';
 import LabResultPage from '../pages/dashboard/labTechnician/LabResultPage';
 import LabRequestApproval from '../pages/dashboard/financeStaff/LabRequestApproval';
+
 const AppRoutes = () => {
   const { user } = useAuth();
 
