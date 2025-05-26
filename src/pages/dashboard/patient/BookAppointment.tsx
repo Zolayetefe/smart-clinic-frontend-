@@ -293,7 +293,7 @@ const BookAppointment: React.FC = () => {
         setAiRecommendation(recommendation);
         setSelectedSpecialty(recommendedSpecialty);
         
-        toast.success('AI analysis complete', {
+        toast.success('Specialty analysis complete', {
           id: aiToast
         });
       } else {
