@@ -448,7 +448,7 @@ const BookAppointment: React.FC = () => {
             
             {selectedDoctor === doctor.doctorId && (
               <div className="mt-4">
-                <h6 className="font-medium text-sm mb-2">Available Slots:</h6>
+                <h6 className="font-medium text-sm mb-2">This Week Doctor {doctor.name} Available Slots:</h6>
                 <div className="grid grid-cols-2 gap-2">
                   {doctor.slots.map((slot) => (
                     <button
@@ -574,7 +574,7 @@ const BookAppointment: React.FC = () => {
             )}
           </div>
 
-          {/* AI Recommendation if available */}
+          {/*  Recommendation if available */}
           {renderAiRecommendation()}
 
           {/* Manual Selection */}
@@ -620,7 +620,7 @@ const BookAppointment: React.FC = () => {
     </div>
   );
   
-  // Update the AI recommendation display
+  // Update the  recommendation display
   const renderAiRecommendation = () => {
     if (!aiRecommendation) return null;
 

@@ -19,7 +19,7 @@ const AuthLayout: React.FC = () => {
         </div>
         
         <div className="mt-6 text-center">
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-white70">
             &copy; {new Date().getFullYear()} Smart Clinic. All rights reserved.
           </p>
         </div>

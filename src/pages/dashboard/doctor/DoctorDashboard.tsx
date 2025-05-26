@@ -54,7 +54,10 @@ const DoctorDashboard: React.FC = () => {
       try {
         if (user?.doctor?.id) {
           const response = await axios.get(`http://localhost:5000/api/doctor/appointments/${user.doctor.id}`, {
-            withCredentials: true
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
           });
           setAppointments(response.data.appointments || []);
         }

@@ -65,7 +65,7 @@ const AdminDashboard: React.FC = () => {
     { 
       id: 3, 
       title: 'Monthly Revenue', 
-      value: `${Number(stats.monthlyRevenue).toLocaleString()} BIRR`, 
+      value: `${Number(stats.monthlyRevenue).toLocaleString()} ETB`, 
       icon: <DollarSign className="h-6 w-6 text-accent" /> 
     },
     { 

@@ -281,14 +281,18 @@ const LabRequest: React.FC = () => {
     }));
   };
 
-  const handleSubmitPrescription = async () => {
+  const handleLabRequestSubmit = async () => {
     try {
-      await axios.post('http://localhost:5000/api/doctor/prescription', prescriptionData, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+      await axios.post(
+        'http://localhost:5000/api/doctor/prescription',
+        prescriptionData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
       setShowPrescriptionModal(false);
       // Reset prescription data
       setPrescriptionData({
@@ -717,7 +721,7 @@ const LabRequest: React.FC = () => {
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={handleSubmitPrescription}
+                  onClick={handleLabRequestSubmit}
                 >
                   Submit Prescription
                 </Button>

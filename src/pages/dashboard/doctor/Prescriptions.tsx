@@ -42,7 +42,10 @@ const Prescriptions = () => {
       try {
         setLoading(true);
         const response = await axios.get('http://localhost:5000/api/doctor/prescriptions', {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         setPrescriptions(response.data);
         setFilteredPrescriptions(response.data);
