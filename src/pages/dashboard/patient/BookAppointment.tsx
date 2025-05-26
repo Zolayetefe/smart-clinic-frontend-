@@ -204,6 +204,15 @@ interface AiRecommendation {
   alternativeSpecialties: string[];
 }
 
+// Helper function to convert 24h time to 12h format
+const convertTo12Hour = (time: string) => {
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 const BookAppointment: React.FC = () => {
   const { patientId } = useParams(); // Get patientId from URL params
   const navigate = useNavigate();
@@ -473,7 +482,7 @@ const BookAppointment: React.FC = () => {
                     >
                       <div className="flex items-center justify-between">
                         <span>{slot.day}</span>
-                        <span>{slot.time}</span>
+                        <span>{convertTo12Hour(slot.time)}</span>
                       </div>
                       {slot.isBooked && (
                         <div className="text-xs mt-1">
@@ -726,11 +735,11 @@ const BookAppointment: React.FC = () => {
                       <p className="text-sm text-gray-500">Day</p>
                       <p className="font-medium">{selectedSlot.day}</p>
                     </div>
-              <div>
+                    <div>
                       <p className="text-sm text-gray-500">Time</p>
-                      <p className="font-medium">{selectedSlot.time}</p>
-                </div>
-              </div>
+                      <p className="font-medium">{convertTo12Hour(selectedSlot.time)}</p>
+                    </div>
+                  </div>
                 </div>
               )}
               
@@ -798,7 +807,7 @@ const BookAppointment: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-500">Time:</span>
                         <span className="font-medium text-gray-900">
-                          {selectedSlot ? `${selectedSlot.day} at ${selectedSlot.time}` : ''}
+                          {selectedSlot ? `${selectedSlot.day} at ${convertTo12Hour(selectedSlot.time)}` : ''}
                         </span>
                       </div>
                       
