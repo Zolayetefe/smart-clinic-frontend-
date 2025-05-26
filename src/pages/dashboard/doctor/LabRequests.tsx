@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, FileText, Eye } from 'lucide-react';
+import { Activity, FileText, Eye, Download } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import Card, { CardBody, CardHeader } from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
@@ -7,6 +7,8 @@ import Input from '../../../components/ui/Input';
 import axios from 'axios';
 import { format } from 'date-fns';
 import LabResultSidebar from './LabResultSidebar';
+import { PDFDocument, rgb } from 'pdf-lib';
+import { toast } from 'react-hot-toast';
 
 // Types for Lab Requests and Results
 interface LabTest {
@@ -44,11 +46,15 @@ interface LabResult {
   labRequestId: string;
   labTechnicianId: string;
   patientId: string;
-  doctorId: string;
   patientName: string;
   patientEmail: string;
+  patientAddress: string;
+  patientGender: string;
+  patientBirthDate: string;
+  doctorId: string;
   doctorName: string;
   doctorEmail: string;
+  doctorSpecialization: string;
   labTechnicianName: string;
   labTechnicianEmail: string;
   result: Record<string, string>;
@@ -72,6 +78,37 @@ interface Prescription {
   medications: Medication[];
   approvalStatus: 'pending' | 'approved';
   notes: string;
+}
+
+interface ReferralData {
+  // Referring Clinic Information
+  referringClinicName: string;
+  referringClinicAddress: string;
+  referringClinicPhone: string;
+  referringClinicEmail: string;
+
+  // Referred To Information
+  referredToClinic: string;
+  department: string;
+  specialist: string;
+  address: string;
+  phone: string;
+  email: string;
+
+  // Clinical Information
+  reasonForReferral: string;
+  clinicalHistory: string;
+  currentMedications: string;
+  relevantTestResults: string;
+  diagnosisNotes: string;
+  treatmentGiven: string;
+  recommendedTreatmentPlan: string;
+  urgencyLevel: 'routine' | 'urgent' | 'emergency';
+  
+  // Additional Information
+  specialInstructions: string;
+  followUpPlan: string;
+  additionalNotes: string;
 }
 
 const LabRequest: React.FC = () => {
@@ -107,6 +144,31 @@ const LabRequest: React.FC = () => {
     ],
     approvalStatus: 'pending',
     notes: ''
+  });
+
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralData, setReferralData] = useState<ReferralData>({
+    referringClinicName: '',
+    referringClinicAddress: '',
+    referringClinicPhone: '',
+    referringClinicEmail: '',
+    referredToClinic: '',
+    department: '',
+    specialist: '',
+    address: '',
+    phone: '',
+    email: '',
+    reasonForReferral: '',
+    clinicalHistory: '',
+    currentMedications: '',
+    relevantTestResults: '',
+    diagnosisNotes: '',
+    treatmentGiven: '',
+    recommendedTreatmentPlan: '',
+    urgencyLevel: 'routine',
+    specialInstructions: '',
+    followUpPlan: '',
+    additionalNotes: ''
   });
 
   // Separate functions for API calls
@@ -314,6 +376,225 @@ const LabRequest: React.FC = () => {
     } catch (error) {
       console.error('Error submitting prescription:', error);
       setError('Failed to submit prescription');
+    }
+  };
+
+  // Update the generateReferralPDF function to include new fields
+  const generateReferralPDF = async () => {
+    try {
+      const pdfDoc = await PDFDocument.create();
+      let page = pdfDoc.addPage();
+      const { width, height } = page.getSize();
+      
+      const fontSize = 12;
+      const titleSize = 16;
+      const sectionTitleSize = 14;
+      const lineHeight = fontSize * 1.5;
+      const titleLineHeight = titleSize * 1.5;
+      const sectionLineHeight = sectionTitleSize * 1.5;
+      const margin = 50;
+      const sectionSpacing = 30; // Space between sections
+      let currentY = height - margin;
+      
+      // Helper function to add new page
+      const addNewPage = () => {
+        page = pdfDoc.addPage();
+        currentY = height - margin;
+        return page;
+      };
+
+      // Helper function to write text with page break handling
+      const writeText = (text: string, options: { 
+        x: number; 
+        size: number; 
+        isBold?: boolean; 
+        indent?: number;
+        isTitle?: boolean;
+        isSectionTitle?: boolean;
+      }) => {
+        const { x, size, isBold = false, indent = 0, isTitle = false, isSectionTitle = false } = options;
+        
+        // Calculate the space needed for this text
+        const spaceNeeded = isTitle ? titleLineHeight : 
+                           isSectionTitle ? sectionLineHeight : 
+                           lineHeight;
+        
+        // Check if we need a new page
+        if (currentY < margin + spaceNeeded) {
+          page = addNewPage();
+        }
+
+        page.drawText(text, {
+          x: x + indent,
+          y: currentY,
+          size,
+          color: rgb(0, 0, 0)
+        });
+
+        // Adjust vertical position based on text type
+        currentY -= spaceNeeded;
+      };
+
+      // Helper function to write a section of text with automatic line breaks
+      const writeSection = (text: string, maxWidth: number, options: { x: number; size: number; indent?: number }) => {
+        const words = text.split(' ');
+        let line = '';
+        
+        for (const word of words) {
+          const testLine = line + (line ? ' ' : '') + word;
+          const testWidth = (testLine.length * options.size * 0.6); // Approximate width calculation
+          
+          if (testWidth > maxWidth) {
+            if (line) {
+              writeText(line, options);
+              line = word;
+            } else {
+              // If a single word is too long, force it to wrap
+              writeText(word, options);
+              line = '';
+            }
+          } else {
+            line = testLine;
+          }
+        }
+        
+        if (line) {
+          writeText(line, options);
+        }
+      };
+
+      // Main Title
+      writeText('MEDICAL REFERRAL LETTER', { x: margin, size: titleSize, isBold: true, isTitle: true });
+      currentY -= sectionSpacing;
+
+      // Date
+      writeText(`Date: ${format(new Date(), 'PPP')}`, { x: margin, size: fontSize });
+      currentY -= sectionSpacing;
+
+      // Referring Clinic Section
+      writeText('REFERRING CLINIC:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      [
+        `Clinic: ${referralData.referringClinicName}`,
+        `Address: ${referralData.referringClinicAddress}`,
+        `Phone: ${referralData.referringClinicPhone}`,
+        `Email: ${referralData.referringClinicEmail}`,
+        `Doctor: Dr. ${selectedResult?.doctorName}`,
+        `Specialization: ${selectedResult?.doctorSpecialization || 'N/A'}`
+      ].forEach(text => {
+        writeText(text, { x: margin, size: fontSize, indent: 20 });
+      });
+      currentY -= sectionSpacing;
+
+      // Referred To Section
+      writeText('REFERRED TO:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      [
+        `Clinic: ${referralData.referredToClinic}`,
+        `Department: ${referralData.department}`,
+        `Specialist: ${referralData.specialist}`,
+        `Address: ${referralData.address}`,
+        `Phone: ${referralData.phone}`,
+        `Email: ${referralData.email}`
+      ].forEach(text => {
+        writeText(text, { x: margin, size: fontSize, indent: 20 });
+      });
+      currentY -= sectionSpacing;
+
+      // Patient Information Section
+      writeText('PATIENT INFORMATION:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      [
+        `Name: ${selectedResult?.patientName}`,
+        `Gender: ${selectedResult?.patientGender}`,
+        `Date of Birth: ${format(new Date(selectedResult?.patientBirthDate || ''), 'PPP')}`,
+        `Address: ${selectedResult?.patientAddress}`,
+        `Email: ${selectedResult?.patientEmail}`
+      ].forEach(text => {
+        writeText(text, { x: margin, size: fontSize, indent: 20 });
+      });
+      currentY -= sectionSpacing;
+
+      // Clinical Information Section
+      writeText('CLINICAL INFORMATION:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      writeText(`Urgency Level: ${referralData.urgencyLevel.toUpperCase()}`, { x: margin, size: fontSize, indent: 20 });
+      currentY -= lineHeight;
+      
+      // Clinical History with word wrap
+      writeText('Clinical History:', { x: margin, size: fontSize, indent: 20 });
+      writeSection(referralData.clinicalHistory || 'N/A', width - margin * 3, { x: margin, size: fontSize, indent: 40 });
+      currentY -= lineHeight;
+
+      // Current Medications
+      writeText('Current Medications:', { x: margin, size: fontSize, indent: 20 });
+      writeSection(referralData.currentMedications || 'None', width - margin * 3, { x: margin, size: fontSize, indent: 40 });
+      currentY -= lineHeight;
+
+      // Diagnosis Notes
+      writeText('Diagnosis Notes:', { x: margin, size: fontSize, indent: 20 });
+      writeSection(referralData.diagnosisNotes || 'N/A', width - margin * 3, { x: margin, size: fontSize, indent: 40 });
+      currentY -= sectionSpacing;
+
+      // Treatment Information Section
+      writeText('TREATMENT INFORMATION:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      
+      // Treatment Given
+      writeText('Treatment Given:', { x: margin, size: fontSize, indent: 20 });
+      writeSection(referralData.treatmentGiven || 'None', width - margin * 3, { x: margin, size: fontSize, indent: 40 });
+      currentY -= sectionSpacing;
+
+      // Lab Results Section
+      writeText('LAB RESULTS:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      const results = Object.entries(selectedResult?.result || {});
+      if (results.length > 0) {
+        results.forEach(([test, value], index) => {
+          writeText(`${test}:`, { x: margin, size: fontSize, indent: 20 });
+          writeSection(value, width - margin * 3, { x: margin, size: fontSize, indent: 40 });
+          if (index < results.length - 1) {
+            currentY -= lineHeight;
+          }
+        });
+      } else {
+        writeText('No lab results available', { x: margin, size: fontSize, indent: 20 });
+      }
+      currentY -= sectionSpacing;
+
+      // Recommended Treatment Plan
+      writeText('RECOMMENDED TREATMENT PLAN:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+      writeSection(referralData.recommendedTreatmentPlan || 'To be determined', width - margin * 3, { x: margin, size: fontSize, indent: 20 });
+      currentY -= sectionSpacing;
+
+      // Special Instructions
+      if (referralData.specialInstructions) {
+        writeText('SPECIAL INSTRUCTIONS:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+        writeSection(referralData.specialInstructions, width - margin * 3, { x: margin, size: fontSize, indent: 20 });
+        currentY -= sectionSpacing;
+      }
+
+      // Follow-up Plan
+      if (referralData.followUpPlan) {
+        writeText('FOLLOW-UP PLAN:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+        writeSection(referralData.followUpPlan, width - margin * 3, { x: margin, size: fontSize, indent: 20 });
+        currentY -= sectionSpacing;
+      }
+
+      // Additional Notes
+      if (referralData.additionalNotes) {
+        writeText('ADDITIONAL NOTES:', { x: margin, size: sectionTitleSize, isBold: true, isSectionTitle: true });
+        writeSection(referralData.additionalNotes, width - margin * 3, { x: margin, size: fontSize, indent: 20 });
+      }
+
+      // Generate and download PDF
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `referral-${selectedResult?.patientName}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate referral PDF');
     }
   };
 
@@ -614,6 +895,12 @@ const LabRequest: React.FC = () => {
                   {selectedResult.prescriptionId ? 'Prescription Added' : 'Write Prescription'}
                 </Button>
                 <Button
+                  variant="secondary"
+                  onClick={() => setShowReferralModal(true)}
+                >
+                  Write Referral
+                </Button>
+                <Button
                   variant="outline"
                   onClick={() => setSelectedResult(null)}
                 >
@@ -724,6 +1011,299 @@ const LabRequest: React.FC = () => {
                   onClick={handleLabRequestSubmit}
                 >
                   Submit Prescription
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Referral Modal */}
+      {showReferralModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Write Referral</h2>
+              <button
+                onClick={() => setShowReferralModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Referring Clinic Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Referring Clinic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Clinic Name"
+                    value={referralData.referringClinicName}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      referringClinicName: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Clinic Address"
+                    value={referralData.referringClinicAddress}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      referringClinicAddress: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Clinic Phone"
+                    value={referralData.referringClinicPhone}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      referringClinicPhone: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Clinic Email"
+                    type="email"
+                    value={referralData.referringClinicEmail}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      referringClinicEmail: e.target.value
+                    }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Referred To Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Referred To</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Clinic / Hospital Name"
+                    value={referralData.referredToClinic}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      referredToClinic: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Department"
+                    value={referralData.department}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      department: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Specialist Name"
+                    value={referralData.specialist}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      specialist: e.target.value
+                    }))}
+                  />
+                  <Input
+                    label="Address"
+                    value={referralData.address}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      address: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Phone"
+                    value={referralData.phone}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      phone: e.target.value
+                    }))}
+                    required
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={referralData.email}
+                    onChange={(e) => setReferralData(prev => ({
+                      ...prev,
+                      email: e.target.value
+                    }))}
+                  />
+                </div>
+              </div>
+
+              {/* Clinical Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Clinical Information</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Urgency Level
+                      </label>
+                      <select
+                        value={referralData.urgencyLevel}
+                        onChange={(e) => setReferralData(prev => ({
+                          ...prev,
+                          urgencyLevel: e.target.value as 'routine' | 'urgent' | 'emergency'
+                        }))}
+                        className="w-full px-3 py-2 border rounded-md"
+                        required
+                      >
+                        <option value="routine">Routine</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="emergency">Emergency</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Clinical History
+                    </label>
+                    <textarea
+                      value={referralData.clinicalHistory}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        clinicalHistory: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={4}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Medications
+                    </label>
+                    <textarea
+                      value={referralData.currentMedications}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        currentMedications: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Diagnosis Notes
+                    </label>
+                    <textarea
+                      value={referralData.diagnosisNotes}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        diagnosisNotes: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Treatment Given
+                    </label>
+                    <textarea
+                      value={referralData.treatmentGiven}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        treatmentGiven: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Recommended Treatment Plan
+                    </label>
+                    <textarea
+                      value={referralData.recommendedTreatmentPlan}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        recommendedTreatmentPlan: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Additional Information</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Special Instructions
+                    </label>
+                    <textarea
+                      value={referralData.specialInstructions}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        specialInstructions: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Follow-up Plan
+                    </label>
+                    <textarea
+                      value={referralData.followUpPlan}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        followUpPlan: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Additional Notes
+                    </label>
+                    <textarea
+                      value={referralData.additionalNotes}
+                      onChange={(e) => setReferralData(prev => ({
+                        ...prev,
+                        additionalNotes: e.target.value
+                      }))}
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReferralModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={generateReferralPDF}
+                >
+                  Generate Referral PDF
                 </Button>
               </div>
             </div>

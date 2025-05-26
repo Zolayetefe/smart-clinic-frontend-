@@ -9,11 +9,15 @@ interface LabResult {
   labRequestId: string;
   labTechnicianId: string;
   patientId: string;
-  doctorId: string;
   patientName: string;
   patientEmail: string;
+  patientAddress: string;
+  patientGender: string;
+  patientBirthDate: string;
+  doctorId: string;
   doctorName: string;
   doctorEmail: string;
+  doctorSpecialization: string;
   labTechnicianName: string;
   labTechnicianEmail: string;
   result: Record<string, string>;
