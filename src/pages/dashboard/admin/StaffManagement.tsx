@@ -45,6 +45,15 @@ interface StaffFormData {
   availabilities?: AvailabilityForm[];
 }
 
+interface FormErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+  phone?: string;
+  role?: string;
+  specialization?: string;
+}
+
 interface DeleteConfirmationProps {
   isOpen: boolean;
   staffName: string;
@@ -312,6 +321,30 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({
   );
 };
 
+// Add validation helper functions
+const isValidEthiopianPhone = (phone: string): boolean => {
+  // Ethiopian phone number format: +251 9X XXX XXXX or 09X XXX XXXX
+  const ethiopianPhoneRegex = /^(?:\+251|0)9\d{8}$/;
+  return ethiopianPhoneRegex.test(phone.replace(/\s/g, ''));
+};
+
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isStrongPassword = (password: string): boolean => {
+  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number, and 1 special character
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  return passwordRegex.test(password);
+};
+
+const isValidName = (name: string): boolean => {
+  // At least 2 characters, only letters and spaces
+  const nameRegex = /^[A-Za-z\s]{2,}$/;
+  return nameRegex.test(name);
+};
+
 const StaffManagement: React.FC = () => {
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(false);
@@ -344,6 +377,7 @@ const StaffManagement: React.FC = () => {
     availabilities: [],
     doctorName: "",
   });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   // API instance
   const api = axios.create({
@@ -373,7 +407,40 @@ const StaffManagement: React.FC = () => {
     fetchStaffs();
   }, []);
 
-  // Handle form input changes
+  // Validate form fields
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Name is required';
+        if (!isValidName(value)) return 'Name should contain only letters and be at least 2 characters long';
+        break;
+      case 'email':
+        if (!value) return 'Email is required';
+        if (!isValidEmail(value)) return 'Please enter a valid email address';
+        break;
+      case 'password':
+        if (!value) return 'Password is required';
+        if (!isStrongPassword(value)) {
+          return 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+        }
+        break;
+      case 'phone':
+        if (!value) return 'Phone number is required';
+        if (!isValidEthiopianPhone(value)) {
+          return 'Please enter a valid Ethiopian phone number (e.g., +251912345678 or 0912345678)';
+        }
+        break;
+      case 'role':
+        if (!value) return 'Role is required';
+        break;
+      case 'specialization':
+        if (formData.role === 'doctor' && !value) return 'Specialization is required for doctors';
+        break;
+    }
+    return '';
+  };
+
+  // Update handleInputChange to include validation
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -381,6 +448,13 @@ const StaffManagement: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+
+    // Perform validation
+    const error = validateField(name, value);
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: error
     }));
   };
 
@@ -398,9 +472,37 @@ const StaffManagement: React.FC = () => {
     }));
   };
 
-  // Handle staff registration
+  // Update handleSubmit to fix the type error
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all fields
+    const newErrors: FormErrors = {};
+    const fieldsToValidate = ['name', 'email', 'password', 'phone', 'role'] as const;
+    
+    // Validate basic fields
+    fieldsToValidate.forEach((key) => {
+      const error = validateField(key, formData[key]);
+      if (error) {
+        newErrors[key] = error;
+      }
+    });
+
+    // Validate specialization only for doctors
+    if (formData.role === 'doctor') {
+      const specializationError = validateField('specialization', formData.specialization || '');
+      if (specializationError) {
+        newErrors.specialization = specializationError;
+      }
+    }
+
+    // If there are errors, don't submit
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      setError('Please fix the validation errors before submitting.');
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -427,6 +529,7 @@ const StaffManagement: React.FC = () => {
         specialization: "",
         availabilities: [],
       });
+      setFormErrors({});
       setShowForm(false);
       fetchStaffs();
       setError(null);
@@ -479,7 +582,6 @@ const StaffManagement: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information Section */}
         <div className="space-y-6">
           <div className="pb-6 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -492,6 +594,8 @@ const StaffManagement: React.FC = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
+                error={formErrors.name}
+                helperText="Enter your full name (letters only)"
                 className="w-full"
               />
               <Input
@@ -501,6 +605,8 @@ const StaffManagement: React.FC = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
+                error={formErrors.email}
+                helperText="Enter a valid email address"
                 className="w-full"
               />
               <Input
@@ -510,6 +616,8 @@ const StaffManagement: React.FC = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
+                error={formErrors.password}
+                helperText="Password must be at least 8 characters with uppercase, lowercase, number, and special character"
                 className="w-full"
               />
               <Input
@@ -518,6 +626,8 @@ const StaffManagement: React.FC = () => {
                 value={formData.phone}
                 onChange={handleInputChange}
                 required
+                error={formErrors.phone}
+                helperText="Format: +251912345678 or 0912345678"
                 className="w-full"
               />
             </div>
@@ -536,7 +646,9 @@ const StaffManagement: React.FC = () => {
                 name="role"
                 value={formData.role}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary ${
+                  formErrors.role ? 'border-red-500' : ''
+                }`}
                 required
               >
                 <option value="">Select Role</option>
@@ -548,6 +660,9 @@ const StaffManagement: React.FC = () => {
                 <option value="admin">Admin</option>
                 <option value="finance">Finance Staff</option>
               </select>
+              {formErrors.role && (
+                <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>
+              )}
             </div>
           </div>
 

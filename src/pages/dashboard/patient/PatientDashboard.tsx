@@ -29,63 +29,11 @@ const PatientDashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Mock data for upcoming appointments
-  const upcomingAppointments = [
-    { 
-      id: '1', 
-      doctorName: 'Dr. Sarah Johnson', 
-      specialty: 'Cardiologist',
-      date: '2025-03-15', 
-      time: '10:00 AM', 
-      status: 'confirmed'
-    },
-    { 
-      id: '2', 
-      doctorName: 'Dr. Michael Chen', 
-      specialty: 'Dermatologist',
-      date: '2025-03-22', 
-      time: '2:30 PM', 
-      status: 'confirmed'
-    }
-  ];
+
   
   // Mock data for recent prescriptions
-  const recentPrescriptions = [
-    {
-      id: '1',
-      date: '2025-02-28',
-      doctor: 'Dr. Sarah Johnson',
-      medications: ['Lisinopril 10mg', 'Aspirin 81mg']
-    },
-    {
-      id: '2',
-      date: '2025-02-15',
-      doctor: 'Dr. Robert Williams',
-      medications: ['Amoxicillin 500mg']
-    }
-  ];
+
   
-  // Mock data for reminders
-  const reminders = [
-    {
-      id: '1',
-      type: 'Appointment',
-      message: 'Cardiology checkup tomorrow at 10:00 AM',
-      date: '2025-03-14'
-    },
-    {
-      id: '2',
-      type: 'Medication',
-      message: 'Take Lisinopril daily before breakfast',
-      date: '2025-03-01'
-    },
-    {
-      id: '3',
-      type: 'Lab Test',
-      message: 'Blood work results are available',
-      date: '2025-03-05'
-    }
-  ];
   
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -147,38 +95,6 @@ const PatientDashboard: React.FC = () => {
           </CardBody>
         </Card>
         
-        <Card className="bg-white">
-          <CardBody className="flex flex-col items-center p-6">
-            <div className="p-3 bg-secondary/10 rounded-full">
-              <FileText className="h-8 w-8 text-secondary" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Prescriptions</h3>
-            <p className="mt-1 text-3xl font-semibold text-secondary">{recentPrescriptions.length}</p>
-            <Link 
-              to="/patient/records"
-              className="mt-4 text-sm text-secondary hover:text-secondary-dark font-medium flex items-center"
-            >
-              View all prescriptions
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </CardBody>
-        </Card>
-        
-        <Card className="bg-white">
-          <CardBody className="flex flex-col items-center p-6">
-            <div className="p-3 bg-accent/10 rounded-full">
-              <Bell className="h-8 w-8 text-accent" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Reminders</h3>
-            <p className="mt-1 text-3xl font-semibold text-accent">{reminders.length}</p>
-            <button 
-              className="mt-4 text-sm text-accent hover:text-accent-dark font-medium flex items-center"
-            >
-              View all reminders
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </button>
-          </CardBody>
-        </Card>
       </div>
       
       {/* Upcoming Appointments */}
@@ -260,53 +176,7 @@ const PatientDashboard: React.FC = () => {
         </CardBody>
       </Card>
       
-      {/* Recent Prescriptions */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Recent Prescriptions</h3>
-            <Link 
-              to="/patient/records"
-              className="text-sm text-primary hover:text-primary-dark font-medium flex items-center"
-            >
-              View all
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </div>
-        </CardHeader>
-        <CardBody className="px-0 py-0">
-          <div className="divide-y divide-gray-200">
-            {recentPrescriptions.map((prescription) => (
-              <div key={prescription.id} className="p-6 flex items-start">
-                <div className="mr-4 flex-shrink-0">
-                  <div className="p-2 bg-secondary/10 rounded-full">
-                    <FileText className="h-6 w-6 text-secondary" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <h4 className="text-base font-medium text-gray-900">Prescription</h4>
-                    <span className="ml-2 text-sm text-gray-500">
-                      {new Date(prescription.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500">By {prescription.doctor}</p>
-                  <div className="mt-2">
-                    {prescription.medications.map((med, index) => (
-                      <span 
-                        key={index} 
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-1"
-                      >
-                        {med}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
+  
       
       {/* Reminders */}
     </div>
